@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GameType {
+  RULETA
+  RASCA_Y_GANA
+  SLOTS
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  FINISHED
+}
+
+enum Language {
+  es
+  en
+  pt
+}
+
+enum ClosedBehavior {
+  EXTERNAL_URL
+  LEAD_MAGNET
+  RESTART
+}
+
+model Plan {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  maxQrGames    Int
+  maxScansPerQr Int
+  maxLeads      Int
+  price         Float          @default(0)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  organizations Organization[]
+}
+
+model Organization {
+  id          String     @id @default(cuid())
+  name        String
+  email       String     @unique
+  planId      String
+  plan        Plan       @relation(fields: [planId], references: [id])
+  totalScans  Int        @default(0)
+  totalLeads  Int        @default(0)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  users       User[]
+  campaigns   Campaign[]
+  staffPins   StaffPin[]
+}
+
+model User {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String       @unique
+  passwordHash   String
+  name           String?
+  role           String       @default("OWNER")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Campaign {
+  id                String         @id @default(cuid())
+  organizationId    String
+  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name              String
+  gameType          GameType       @default(RULETA)
+  attemptsPerSession Int           @default(1)
+  status            CampaignStatus @default(DRAFT)
+  logoUrl           String?
+  headerImageUrl    String?
+  primaryColor      String         @default("#7C3AED")
+  secondaryColor    String         @default("#A78BFA")
+  backgroundColor   String         @default("#1a1a2e")
+  language          Language       @default(es)
+  ageGate           Boolean        @default(false)
+  formFields        Json           @default("[]")
+  startDate         DateTime?
+  endDate           DateTime?
+  upsellEnabled     Boolean        @default(false)
+  upsellTitle       String?
+  upsellImageUrl    String?
+  upsellPrice       Float?
+  upsellCurrency    String         @default("ARS")
+  upsellLink        String?
+  closedBehavior    ClosedBehavior @default(LEAD_MAGNET)
+  closedRedirectUrl String?
+  qrSlug            String         @unique
+  qrCodeUrl         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  prizes         Prize[]
+  consolePrize   ConsolePrize?
+  leads          Lead[]
+  scans          Scan[]
+  emailTemplates EmailTemplate[]
+  @@index([organizationId])
+  @@index([qrSlug])
+  @@index([status])
+}
+
+model Prize {
+  id             String   @id @default(cuid())
+  campaignId     String
+  campaign       Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title          String
+  description    String?
+  imageUrl       String?
+  stock          Int      @default(10)
+  priority       Int      @default(5)
+  frequency      Int      @default(50)
+  validDays      Int      @default(30)
+  isActive       Boolean  @default(true)
+  deliveredCount Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  winners        Winner[]
+  @@index([campaignId])
+}
+
+model ConsolePrize {
+  id          String   @id @default(cuid())
+  campaignId  String   @unique
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  couponCode  String
+  imageUrl    String?
+}
+
+model EmailTemplate {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  type       String
+  subject    String
+  bodyHtml   String
+  @@unique([campaignId, type])
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  email       String
+  whatsapp    String
+  extraFields Json     @default("{}")
+  ipAddress   String
+  deviceToken String?
+  createdAt   DateTime @default(now())
+  scans       Scan[]
+  winner      Winner?
+  @@unique([campaignId, email])
+  @@index([campaignId])
+}
+
+model Scan {
+  id            String   @id @default(cuid())
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId        String?
+  lead          Lead?    @relation(fields: [leadId], references: [id])
+  ipAddress     String
+  isWinner      Boolean  @default(false)
+  attemptNumber Int      @default(1)
+  playedAt      DateTime @default(now())
+  @@index([campaignId])
+  @@index([leadId])
+}
+
+model Winner {
+  id             String    @id @default(cuid())
+  prizeId        String
+  prize          Prize     @relation(fields: [prizeId], references: [id])
+  leadId         String    @unique
+  lead           Lead      @relation(fields: [leadId], references: [id])
+  redemptionCode String    @unique
+  isRedeemed     Boolean   @default(false)
+  redeemedAt     DateTime?
+  redeemedByPin  String?
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+  @@index([redemptionCode])
+}
+
+model StaffPin {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pin            String
+  staffName      String
+  isActive       Boolean      @default(true)
+  redeemedCount  Int          @default(0)
+  createdAt      DateTime     @default(now())
+  @@unique([organizationId, pin])
+}
