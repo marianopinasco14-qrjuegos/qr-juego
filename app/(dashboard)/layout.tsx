@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </div>
         <nav className="flex-1 p-4 space-y-1">
-          {[{href:"/dashboard",label:"Dashboard",emoji:"📊"},{href:"/campaigns",label:"QR Juegos",emoji:"🎮"},{href:"/leads",label:"Leads",emoji:"👥"},{href:"/staff-pins",label:"Staff PINs",emoji:"🔑"}].map((item) => (
+          {[{href:"/dashboard",label:"Dashboard",emoji:"📊"},{href:"/campaigns",label:"QR Juegos",emoji:"🎮"},{href:"/leads",label:"Leads",emoji:"👥"},{href:"/staff-pins",label:"Staff PINs",emoji:"🔑"},{href:"/settings",label:"Configuración",emoji:"⚙️"}].map((item) => (
             <Link key={item.href} href={item.href} className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white/60 hover:text-white hover:bg-white/5 transition-colors">
               <span>{item.emoji}</span>{item.label}
             </Link>

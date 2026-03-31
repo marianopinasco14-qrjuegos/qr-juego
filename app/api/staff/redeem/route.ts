@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { dispatchWebhook } from "@/lib/webhooks";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,6 +23,12 @@ export async function POST(req: NextRequest) {
       prisma.staffPin.update({ where: { id: staffPinRecord.id }, data: { redeemedCount: { increment: 1 } } })
     ]);
 
+    dispatchWebhook(organizationId, "prize.redeemed", {
+      redemptionCode,
+      prizeName: winner.prize.title,
+      customerEmail: winner.lead.email,
+      staffPin,
+    });
     return NextResponse.json({ valid: true, message: "¡Premio canjeado exitosamente!", prizeName: winner.prize.title, customerEmail: winner.lead.email });
   } catch (error) {
     console.error("Error redeem:", error);

@@ -7,6 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums existentes ────────────────────────────────────────────────────────
+
 enum GameType {
   RULETA
   RASCA_Y_GANA
@@ -32,34 +34,99 @@ enum ClosedBehavior {
   RESTART
 }
 
+// ─── Enums SAAS ──────────────────────────────────────────────────────────────
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  SUSPENDED
+}
+
+enum CouponType {
+  PERCENTAGE
+  FIXED
+}
+
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum WebhookEvent {
+  lead_created
+  winner_created
+  prize_redeemed
+  campaign_activated
+  subscription_created
+  subscription_canceled
+}
+
+enum PaymentProvider {
+  DLOCAL
+  PADDLE
+  MANUAL
+}
+
+// ─── Modelos de Plan / Organización ──────────────────────────────────────────
+
 model Plan {
-  id            String         @id @default(cuid())
-  name          String
-  description   String?
-  maxQrGames    Int
-  maxScansPerQr Int
-  maxLeads      Int
-  price         Float          @default(0)
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  organizations Organization[]
+  id               String         @id @default(cuid())
+  name             String
+  slug             String         @unique
+  description      String?
+  maxQrGames       Int
+  maxScansPerQr    Int
+  maxLeads         Int
+  price            Float          @default(0)
+  yearlyPrice      Float          @default(0)
+  trialDays        Int            @default(14)
+  features         Json           @default("[]")
+  isPublic         Boolean        @default(true)
+  isActive         Boolean        @default(true)
+  sortOrder        Int            @default(0)
+  whiteLabelEnabled Boolean       @default(false)
+  webhooksEnabled  Boolean        @default(false)
+  affiliatesEnabled Boolean       @default(false)
+  paddlePriceId    String?
+  paddleYearlyPriceId String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  organizations    Organization[]
+  subscriptions    Subscription[]
 }
 
 model Organization {
-  id          String     @id @default(cuid())
-  name        String
-  email       String     @unique
-  planId      String
-  plan        Plan       @relation(fields: [planId], references: [id])
-  totalScans  Int        @default(0)
-  totalLeads  Int        @default(0)
-  isActive    Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  users       User[]
-  campaigns   Campaign[]
-  staffPins   StaffPin[]
+  id                 String             @id @default(cuid())
+  name               String
+  slug               String?            @unique
+  email              String             @unique
+  planId             String
+  plan               Plan               @relation(fields: [planId], references: [id])
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  trialEndsAt        DateTime?
+  totalScans         Int                @default(0)
+  totalLeads         Int                @default(0)
+  isActive           Boolean            @default(true)
+  // White label
+  whiteLabelEnabled  Boolean            @default(false)
+  customDomain       String?            @unique
+  logoUrl            String?
+  primaryColor       String             @default("#7C3AED")
+  // Afiliado que refirió a esta org
+  referredByCode     String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  users              User[]
+  campaigns          Campaign[]
+  staffPins          StaffPin[]
+  subscriptions      Subscription[]
+  webhookEndpoints   WebhookEndpoint[]
+  emailLogs          EmailLog[]
+  couponUses         CouponUse[]
+  affiliateReferrals AffiliateReferral[]
 }
 
 model User {
@@ -74,41 +141,190 @@ model User {
   updatedAt      DateTime     @updatedAt
 }
 
+// ─── Subscripciones ──────────────────────────────────────────────────────────
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId       String
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  planId               String
+  plan                 Plan               @relation(fields: [planId], references: [id])
+  status               SubscriptionStatus @default(TRIAL)
+  provider             PaymentProvider?
+  providerSubId        String?            // paddle / dlocal subscription ID
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialStart           DateTime?
+  trialEnd             DateTime?
+  amount               Float?
+  currency             String             @default("USD")
+  lastPaymentAt        DateTime?
+  nextPaymentAt        DateTime?
+  canceledAt           DateTime?
+  couponId             String?
+  coupon               Coupon?            @relation(fields: [couponId], references: [id])
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ─── Cupones de descuento ─────────────────────────────────────────────────────
+
+model Coupon {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  description String?
+  type        CouponType  @default(PERCENTAGE)
+  value       Float       // porcentaje (0-100) o monto fijo
+  currency    String      @default("USD")
+  maxUses     Int?        // null = ilimitado
+  usedCount   Int         @default(0)
+  validFrom   DateTime    @default(now())
+  validUntil  DateTime?
+  planId      String?     // null = aplica a todos los planes
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  uses         CouponUse[]
+  subscriptions Subscription[]
+}
+
+model CouponUse {
+  id             String       @id @default(cuid())
+  couponId       String
+  coupon         Coupon       @relation(fields: [couponId], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  usedAt         DateTime     @default(now())
+  @@unique([couponId, organizationId])
+}
+
+// ─── Afiliados ────────────────────────────────────────────────────────────────
+
+model Affiliate {
+  id                    String              @id @default(cuid())
+  email                 String              @unique
+  name                  String
+  code                  String              @unique // link de referido: /register?ref=CODE
+  commissionRate        Float               @default(20) // porcentaje
+  status                AffiliateStatus     @default(PENDING)
+  totalReferrals        Int                 @default(0)
+  totalCommissionEarned Float               @default(0)
+  pendingCommission     Float               @default(0)
+  paypalEmail           String?
+  bankDetails           Json?
+  notes                 String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  referrals             AffiliateReferral[]
+}
+
+model AffiliateReferral {
+  id                    String       @id @default(cuid())
+  affiliateId           String
+  affiliate             Affiliate    @relation(fields: [affiliateId], references: [id])
+  referredOrganizationId String
+  referredOrganization  Organization @relation(fields: [referredOrganizationId], references: [id])
+  commissionAmount      Float        @default(0)
+  commissionStatus      String       @default("PENDING") // PENDING, APPROVED, PAID
+  paidAt                DateTime?
+  createdAt             DateTime     @default(now())
+  @@unique([affiliateId, referredOrganizationId])
+  @@index([affiliateId])
+}
+
+// ─── Webhooks ─────────────────────────────────────────────────────────────────
+
+model WebhookEndpoint {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name            String
+  url             String
+  events          Json         @default("[]") // ["lead.created", "winner.created", ...]
+  secret          String       // HMAC secret para verificar
+  isActive        Boolean      @default(true)
+  lastTriggeredAt DateTime?
+  successCount    Int          @default(0)
+  failureCount    Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  logs            WebhookLog[]
+  @@index([organizationId])
+}
+
+model WebhookLog {
+  id             String          @id @default(cuid())
+  endpointId     String
+  endpoint       WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+  event          String
+  payload        Json
+  responseStatus Int?
+  responseBody   String?
+  durationMs     Int?
+  success        Boolean         @default(false)
+  triggeredAt    DateTime        @default(now())
+  @@index([endpointId])
+  @@index([triggeredAt])
+}
+
+// ─── Email Log ────────────────────────────────────────────────────────────────
+
+model EmailLog {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  campaignId     String?
+  to             String
+  subject        String
+  type           String       // WINNER, CONSOLE, TRIAL_EXPIRING, TRIAL_STARTED, etc.
+  status         String       @default("SENT") // SENT, FAILED, BOUNCED
+  resendId       String?
+  error          String?
+  sentAt         DateTime     @default(now())
+  @@index([organizationId])
+  @@index([sentAt])
+}
+
+// ─── Campañas ─────────────────────────────────────────────────────────────────
+
 model Campaign {
-  id                String         @id @default(cuid())
-  organizationId    String
-  organization      Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  name              String
-  gameType          GameType       @default(RULETA)
-  attemptsPerSession Int           @default(1)
-  status            CampaignStatus @default(DRAFT)
-  logoUrl           String?
-  headerImageUrl    String?
-  primaryColor      String         @default("#7C3AED")
-  secondaryColor    String         @default("#A78BFA")
-  backgroundColor   String         @default("#1a1a2e")
-  language          Language       @default(es)
-  ageGate           Boolean        @default(false)
-  formFields        Json           @default("[]")
-  startDate         DateTime?
-  endDate           DateTime?
-  upsellEnabled     Boolean        @default(false)
-  upsellTitle       String?
-  upsellImageUrl    String?
-  upsellPrice       Float?
-  upsellCurrency    String         @default("ARS")
-  upsellLink        String?
-  closedBehavior    ClosedBehavior @default(LEAD_MAGNET)
-  closedRedirectUrl String?
-  qrSlug            String         @unique
-  qrCodeUrl         String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  prizes         Prize[]
-  consolePrize   ConsolePrize?
-  leads          Lead[]
-  scans          Scan[]
-  emailTemplates EmailTemplate[]
+  id                 String         @id @default(cuid())
+  organizationId     String
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name               String
+  gameType           GameType       @default(RULETA)
+  attemptsPerSession Int            @default(1)
+  status             CampaignStatus @default(DRAFT)
+  logoUrl            String?
+  headerImageUrl     String?
+  primaryColor       String         @default("#7C3AED")
+  secondaryColor     String         @default("#A78BFA")
+  backgroundColor    String         @default("#1a1a2e")
+  language           Language       @default(es)
+  ageGate            Boolean        @default(false)
+  formFields         Json           @default("[]")
+  startDate          DateTime?
+  endDate            DateTime?
+  upsellEnabled      Boolean        @default(false)
+  upsellTitle        String?
+  upsellImageUrl     String?
+  upsellPrice        Float?
+  upsellCurrency     String         @default("ARS")
+  upsellLink         String?
+  closedBehavior     ClosedBehavior @default(LEAD_MAGNET)
+  closedRedirectUrl  String?
+  qrSlug             String         @unique
+  qrCodeUrl          String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  prizes             Prize[]
+  consolePrize       ConsolePrize?
+  leads              Lead[]
+  scans              Scan[]
+  emailTemplates     EmailTemplate[]
   @@index([organizationId])
   @@index([qrSlug])
   @@index([status])
@@ -125,7 +341,7 @@ model Prize {
   priority       Int      @default(5)
   frequency      Int      @default(50)
   validDays      Int      @default(30)
-  prizeImage       String?
+  prizeImage     String?
   isActive       Boolean  @default(true)
   deliveredCount Int      @default(0)
   createdAt      DateTime @default(now())

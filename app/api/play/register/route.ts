@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { checkFraud, generateDeviceToken } from "@/lib/fraud-detection";
 import { checkScanLimit, checkLeadLimit } from "@/lib/plan-limits";
 import { registerLeadSchema } from "@/lib/validations";
+import { dispatchWebhook } from "@/lib/webhooks";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -24,6 +25,7 @@ export async function POST(req: NextRequest) {
     if (!fraudCheck.allowed) return NextResponse.json({ error: fraudCheck.reason }, { status: 409 });
     const lead = await prisma.lead.create({ data: { campaignId, email, whatsapp, extraFields: extraFields ?? {}, ipAddress, deviceToken } });
     await prisma.organization.update({ where: { id: campaign.organizationId }, data: { totalLeads: { increment: 1 } } });
+    dispatchWebhook(campaign.organizationId, "lead.created", { leadId: lead.id, email, campaignId, campaignName: campaign.name });
     const newDeviceToken = await generateDeviceToken(campaignId);
     const response = NextResponse.json({ success: true, leadId: lead.id });
     response.cookies.set(`qrj_${campaignId}`, newDeviceToken, { httpOnly: true, sameSite: "strict", maxAge: 86400, path: "/" });
