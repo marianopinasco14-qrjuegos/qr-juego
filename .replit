@@ -1,19 +1,29 @@
-modules = ["nodejs-20"]
 run = "npm run dev"
-
-[nix]
-channel = "stable-24_05"
-
-[deployment]
-run = ["sh", "-c", "npm run build && npm run start"]
-deploymentTarget = "cloudrun"
+modules = ["nodejs-20"]
 
 [[ports]]
 localPort = 3000
 externalPort = 80
 
-[env]
-NODE_ENV = "development"
+[[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
+localPort = 3002
+externalPort = 3002
+
+[[ports]]
+localPort = 3003
+externalPort = 3003
+
+[[ports]]
+localPort = 3004
+externalPort = 3000
+
+[[ports]]
+localPort = 3005
+externalPort = 4200
 
 [agent]
 expertMode = true

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest) {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
   const campaignId = req.nextUrl.searchParams.get("campaignId");

@@ -1,8 +1,10 @@
-import { auth } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const token = cookies().get("auth-token")?.value;
+  const session = token ? { user: verifyToken(token) } : null;
   if (!session?.user) redirect("/login");
   return (
     <div className="min-h-screen bg-gray-950 flex">
@@ -21,7 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           ))}
         </nav>
         <div className="p-4 border-t border-white/10">
-          <Link href="/api/auth/signout" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-white/40 hover:text-white hover:bg-white/5 transition-colors"><span>🚪</span>Cerrar sesión</Link>
+<form action="/api/logout" method="POST"><button type="submit" className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-white/40 hover:text-white hover:bg-white/5 transition-colors w-full"><span>🚪</span>Cerrar sesión</button></form>
         </div>
       </aside>
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-white/10 z-50 flex">

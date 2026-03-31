@@ -125,6 +125,7 @@ model Prize {
   priority       Int      @default(5)
   frequency      Int      @default(50)
   validDays      Int      @default(30)
+  prizeImage       String?
   isActive       Boolean  @default(true)
   deliveredCount Int      @default(0)
   createdAt      DateTime @default(now())

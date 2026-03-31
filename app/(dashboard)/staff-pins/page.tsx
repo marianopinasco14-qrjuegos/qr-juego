@@ -1,7 +1,8 @@
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 export default async function StaffPinsPage() {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   const organizationId = (session!.user as any).organizationId;
   const pins = await prisma.staffPin.findMany({ where: { organizationId }, orderBy: { createdAt: "desc" } });
   return (

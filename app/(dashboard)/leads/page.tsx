@@ -1,8 +1,9 @@
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 export default async function LeadsPage() {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   const organizationId = (session!.user as any).organizationId;
   const leads = await prisma.lead.findMany({ where: { campaign: { organizationId } }, include: { campaign: { select: { name: true } }, winner: { include: { prize: { select: { title: true } } } } }, orderBy: { createdAt: "desc" }, take: 100 });
   return (

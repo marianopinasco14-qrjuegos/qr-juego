@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 import { emailTemplateSchema } from "@/lib/validations";
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const body = await req.json();
   const parsed = emailTemplateSchema.safeParse(body);

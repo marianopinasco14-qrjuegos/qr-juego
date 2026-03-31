@@ -1,25 +1,31 @@
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+"use client";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-export default async function DashboardPage() {
-  const session = await auth();
-  const organizationId = (session!.user as any).organizationId;
-  const [campaigns, totalLeads, totalScans, totalWinners, totalRedeemed] = await Promise.all([
-    prisma.campaign.findMany({ where: { organizationId }, include: { prizes: { select: { stock: true, deliveredCount: true, title: true } }, _count: { select: { leads: true, scans: true } } }, orderBy: { createdAt: "desc" } }),
-    prisma.lead.count({ where: { campaign: { organizationId } } }),
-    prisma.scan.count({ where: { campaign: { organizationId } } }),
-    prisma.winner.count({ where: { prize: { campaign: { organizationId } } } }),
-    prisma.winner.count({ where: { isRedeemed: true, prize: { campaign: { organizationId } } } }),
-  ]);
-  const convRate = totalScans > 0 ? Math.round((totalLeads / totalScans) * 100) : 0;
+import { QRCodeSVG } from "qrcode.react";
+
+export default function DashboardPage() {
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalLeads:0, totalScans:0, totalWinners:0, totalRedeemed:0 });
+  const [qrModal, setQrModal] = useState<{name:string,url:string}|null>(null);
+
+  useEffect(() => {
+    fetch("/api/dashboard/stats").then(r=>r.json()).then(d => {
+      setCampaigns(d.campaigns || []);
+      setStats(d.stats || {});
+    });
+  }, []);
+
+  const convRate = stats.totalScans > 0 ? Math.round((stats.totalLeads / stats.totalScans) * 100) : 0;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <div><h1 className="text-white text-2xl font-bold">Dashboard</h1><p className="text-white/50 text-sm mt-1">Resumen de todas tus campañas</p></div>
         <Link href="/campaigns/new" className="bg-violet-600 hover:bg-violet-500 text-white px-4 py-2 rounded-xl font-medium text-sm transition-colors">+ Nuevo QR Juego</Link>
       </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[{label:"Escaneos",value:totalScans,emoji:"📱"},{label:"Leads",value:totalLeads,emoji:"👥"},{label:"Ganadores",value:totalWinners,emoji:"🏆"},{label:"Canjes",value:totalRedeemed,emoji:"✅"}].map((m) => (
+        {[{label:"Escaneos",value:stats.totalScans,emoji:"📱"},{label:"Leads",value:stats.totalLeads,emoji:"👥"},{label:"Ganadores",value:stats.totalWinners,emoji:"🏆"},{label:"Canjes",value:stats.totalRedeemed,emoji:"✅"}].map((m) => (
           <div key={m.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
             <div className="text-2xl mb-2">{m.emoji}</div>
             <p className="text-3xl font-black text-white">{m.value.toLocaleString()}</p>
@@ -27,10 +33,11 @@ export default async function DashboardPage() {
           </div>
         ))}
       </div>
+
       <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8">
         <p className="text-white font-medium mb-4">📈 Embudo de conversión</p>
         <div className="flex items-center gap-3 flex-wrap">
-          {[{label:"Escaneos",value:totalScans,pct:100},{label:"Leads",value:totalLeads,pct:convRate},{label:"Ganadores",value:totalWinners,pct:totalLeads>0?Math.round((totalWinners/totalLeads)*100):0},{label:"Canjes",value:totalRedeemed,pct:totalWinners>0?Math.round((totalRedeemed/totalWinners)*100):0}].map((s,i,arr) => (
+          {[{label:"Escaneos",value:stats.totalScans,pct:100},{label:"Leads",value:stats.totalLeads,pct:convRate},{label:"Ganadores",value:stats.totalWinners,pct:stats.totalLeads>0?Math.round((stats.totalWinners/stats.totalLeads)*100):0},{label:"Canjes",value:stats.totalRedeemed,pct:stats.totalWinners>0?Math.round((stats.totalRedeemed/stats.totalWinners)*100):0}].map((s,i,arr) => (
             <div key={s.label} className="flex items-center gap-3">
               <div className="text-center">
                 <p className="text-white font-bold text-xl">{s.value}</p>
@@ -42,6 +49,7 @@ export default async function DashboardPage() {
           ))}
         </div>
       </div>
+
       <h2 className="text-white font-bold mb-4">Campañas</h2>
       {campaigns.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-white/20 rounded-2xl">
@@ -65,11 +73,34 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
+                <button onClick={()=>setQrModal({name:c.name,url:`${window.location.origin}/play/${c.qrSlug}`})} className="text-xs text-white/60 hover:text-white bg-white/5 px-3 py-1.5 rounded-lg transition-colors">Ver QR</button>
                 <Link href={`/play/${c.qrSlug}`} target="_blank" className="text-xs text-violet-400 hover:text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg transition-colors">Ver juego</Link>
                 <Link href={`/campaigns/${c.id}`} className="text-xs text-white/60 hover:text-white bg-white/5 px-3 py-1.5 rounded-lg transition-colors">Editar</Link>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {qrModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={()=>setQrModal(null)}>
+          <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center gap-4 max-w-sm w-full" onClick={e=>e.stopPropagation()}>
+            <h2 className="text-white font-bold text-lg text-center">{qrModal.name}</h2>
+            <div className="bg-white p-4 rounded-2xl" id="qr-code-container">
+              <QRCodeSVG value={qrModal.url} size={200} bgColor="white" fgColor="#111"/>
+            </div>
+            <p className="text-white/40 text-xs text-center break-all">{qrModal.url}</p>
+            <button onClick={()=>{
+              const svg = document.querySelector("#qr-code-container svg");
+              if(!svg) return;
+              const blob = new Blob([svg.outerHTML], {type:"image/svg+xml"});
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(blob);
+              a.download = `qr-${qrModal.name}.svg`;
+              a.click();
+            }} className="w-full py-3 rounded-xl font-bold text-white bg-violet-600 hover:bg-violet-500 transition-colors">⬇️ Descargar QR</button>
+            <button onClick={()=>setQrModal(null)} className="text-white/40 text-sm">Cerrar</button>
+          </div>
         </div>
       )}
     </div>

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
   const campaign = await prisma.campaign.findFirst({ where: { id: params.id, organizationId }, include: { prizes: true, consolePrize: true, emailTemplates: true, _count: { select: { leads: true, scans: true } } } });
@@ -10,7 +11,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json(campaign);
 }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
   const body = await req.json();
@@ -20,7 +22,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   return NextResponse.json(updated);
 }
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
   await prisma.campaign.deleteMany({ where: { id: params.id, organizationId } });

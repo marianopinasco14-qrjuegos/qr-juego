@@ -1,13 +1,13 @@
-import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-export default auth((req) => {
+import type { NextRequest } from "next/server";
+
+export function middleware(req: NextRequest) {
+  const token = req.cookies.get("auth-token")?.value;
   const { pathname } = req.nextUrl;
-  const isAuthenticated = !!req.auth;
-  const userRole = (req.auth?.user as any)?.role;
-  const dashboardRoutes = ["/dashboard","/campaigns","/leads","/staff-pins","/settings"];
+  const dashboardRoutes = ["/dashboard", "/campaigns", "/leads", "/staff-pins", "/settings"];
   const isDashboardRoute = dashboardRoutes.some((r) => pathname.startsWith(r));
-  if (isDashboardRoute && !isAuthenticated) return NextResponse.redirect(new URL("/login", req.url));
-  if (pathname.startsWith("/admin") && (!isAuthenticated || userRole !== "SUPERADMIN")) return NextResponse.redirect(new URL("/dashboard", req.url));
+  if (isDashboardRoute && !token) return NextResponse.redirect(new URL("/login", req.url));
   return NextResponse.next();
-});
+}
+
 export const config = { matcher: ["/((?!api|_next/static|_next/image|favicon.ico|play|staff).*)"] };

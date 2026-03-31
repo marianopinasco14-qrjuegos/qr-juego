@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+
 import { prisma } from "@/lib/prisma";
 import { checkCampaignLimit } from "@/lib/plan-limits";
 import { campaignFormSchema } from "@/lib/validations";
 import { nanoid } from "nanoid";
 export async function GET() {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
   const campaigns = await prisma.campaign.findMany({ where: { organizationId }, include: { prizes: { select: { id: true, title: true, stock: true, deliveredCount: true } }, consolePrize: true, _count: { select: { leads: true, scans: true } } }, orderBy: { createdAt: "desc" } });
   return NextResponse.json(campaigns);
 }
 export async function POST(req: NextRequest) {
-  const session = await auth();
+  const token = (await import("next/headers")).cookies().get("auth-token")?.value;
+  const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
   const limitCheck = await checkCampaignLimit(organizationId);
