@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Plan {
-  name: string; slug: string; price: number; trialDays: number;
+  id: string; name: string; slug: string; price: number; yearlyPrice: number | null;
+  trialDays: number; description: string | null;
   maxQrGames: number; maxScansPerQr: number; maxLeads: number;
   whiteLabelEnabled: boolean; webhooksEnabled: boolean; affiliatesEnabled: boolean;
   features: any;
@@ -17,14 +18,25 @@ interface Org {
   logoUrl: string | null; primaryColor: string;
 }
 
+interface Subscription {
+  id: string; status: string; provider: string;
+  currentPeriodEnd: Date | null; trialEnd: Date | null; canceledAt: Date | null;
+}
+
 interface Webhook {
   id: string; name: string; url: string; events: any; isActive: boolean;
   successCount: number; failureCount: number;
 }
 
-interface Props { org: Org; plan: Plan; webhooks: Webhook[] }
+interface Props {
+  org: Org;
+  plan: Plan;
+  webhooks: Webhook[];
+  allPlans: Plan[];
+  currentSubscription: Subscription | null;
+}
 
-export default function SettingsClient({ org, plan, webhooks }: Props) {
+export default function SettingsClient({ org, plan, webhooks, allPlans, currentSubscription }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"account" | "whitelabel" | "webhooks" | "plan">("account");
 
@@ -51,7 +63,15 @@ export default function SettingsClient({ org, plan, webhooks }: Props) {
       </div>
 
       {tab === "account" && <AccountTab org={org} router={router} />}
-      {tab === "plan" && <PlanTab org={org} plan={plan} />}
+      {tab === "plan" && (
+        <PlanTab
+          org={org}
+          plan={plan}
+          allPlans={allPlans}
+          currentSubscription={currentSubscription}
+          router={router}
+        />
+      )}
       {tab === "whitelabel" && plan.whiteLabelEnabled && <WhiteLabelTab org={org} router={router} />}
       {tab === "webhooks" && plan.webhooksEnabled && <WebhooksTab orgId={org.id} webhooks={webhooks} router={router} />}
     </div>
@@ -105,68 +125,275 @@ function AccountTab({ org, router }: { org: Org; router: any }) {
 
 // ─── Plan Tab ─────────────────────────────────────────────────────────────────
 
-function PlanTab({ org, plan }: { org: Org; plan: Plan }) {
+type ConfirmAction = { type: "change"; plan: Plan } | { type: "cancel" };
+
+function PlanTab({
+  org, plan, allPlans, currentSubscription, router,
+}: {
+  org: Org; plan: Plan; allPlans: Plan[];
+  currentSubscription: Subscription | null;
+  router: any;
+}) {
+  const [confirm, setConfirm] = useState<ConfirmAction | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [canceledUntil, setCanceledUntil] = useState<string | null>(null);
+
   const trialDaysLeft = org.trialEndsAt
     ? Math.max(0, Math.ceil((new Date(org.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
 
+  const isCanceled = org.subscriptionStatus === "CANCELED";
+
+  const formatDate = (d: Date | string | null) => {
+    if (!d) return "—";
+    return new Date(d).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+  };
+
+  const execute = async () => {
+    if (!confirm) return;
+    setLoading(true);
+    setMsg(null);
+
+    const body = confirm.type === "cancel"
+      ? { action: "cancel" }
+      : { action: "change", planSlug: confirm.plan.slug };
+
+    const res = await fetch("/api/settings/plan", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    setLoading(false);
+    setConfirm(null);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (confirm.type === "cancel" && data.accessUntil) {
+        setCanceledUntil(formatDate(data.accessUntil));
+      }
+      setMsg({ text: confirm.type === "cancel" ? "Suscripción cancelada." : "Plan actualizado correctamente.", type: "success" });
+      router.refresh();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setMsg({ text: err.error ?? "Error al procesar el cambio.", type: "error" });
+    }
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="bg-gray-900 border border-white/10 rounded-xl p-6">
+    <div className="space-y-5">
+      {/* Current status banner */}
+      <div className="bg-gray-900 border border-white/10 rounded-xl p-5">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="font-semibold text-lg">Plan {plan.name}</h2>
+            <p className="text-xs text-gray-500 uppercase tracking-wider mb-0.5">Plan actual</p>
+            <h2 className="font-bold text-xl">{plan.name}</h2>
             <p className="text-gray-400 text-sm mt-0.5">
-              {plan.price === 0 ? "Gratis" : `$${plan.price}/mes`}
+              {plan.price === 0 ? "Gratis" : `$${plan.price} USD/mes`}
             </p>
           </div>
-          <span className={`text-xs px-3 py-1 rounded-full ${
+          <span className={`text-xs px-3 py-1 rounded-full font-medium ${
             org.subscriptionStatus === "TRIAL" ? "bg-yellow-500/20 text-yellow-300" :
             org.subscriptionStatus === "ACTIVE" ? "bg-green-500/20 text-green-300" :
+            org.subscriptionStatus === "PAST_DUE" ? "bg-orange-500/20 text-orange-300" :
             "bg-red-500/20 text-red-300"
           }`}>
-            {org.subscriptionStatus}
+            {org.subscriptionStatus === "TRIAL" ? "Trial" :
+             org.subscriptionStatus === "ACTIVE" ? "Activo" :
+             org.subscriptionStatus === "PAST_DUE" ? "Pago pendiente" : "Cancelado"}
           </span>
         </div>
 
         {org.subscriptionStatus === "TRIAL" && trialDaysLeft !== null && (
-          <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-300">
-            ⏳ Te quedan <strong>{trialDaysLeft} días</strong> de trial. Actualiza tu plan para continuar sin interrupciones.
+          <div className="mt-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-300">
+            ⏳ Te quedan <strong>{trialDaysLeft} días</strong> de trial. Elegí un plan para continuar sin interrupciones.
+          </div>
+        )}
+
+        {isCanceled && (
+          <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg p-3 text-sm text-red-300">
+            Tu suscripción fue cancelada.
+            {(canceledUntil ?? (currentSubscription?.currentPeriodEnd || currentSubscription?.trialEnd)) && (
+              <> Tenés acceso hasta el <strong>
+                {canceledUntil ?? formatDate(currentSubscription?.currentPeriodEnd ?? currentSubscription?.trialEnd ?? null)}
+              </strong>.</>
+            )}
+          </div>
+        )}
+
+        {msg && (
+          <div className={`mt-3 rounded-lg p-3 text-sm ${
+            msg.type === "success" ? "bg-green-500/10 border border-green-500/30 text-green-300" :
+            "bg-red-500/10 border border-red-500/30 text-red-300"
+          }`}>
+            {msg.text}
           </div>
         )}
 
         <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
           <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">QR Juegos</div>
+            <div className="text-gray-400 text-xs">QR Juegos</div>
             <div className="font-bold text-lg">{plan.maxQrGames}</div>
           </div>
           <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">Escaneos/QR</div>
+            <div className="text-gray-400 text-xs">Escaneos/QR</div>
             <div className="font-bold text-lg">{plan.maxScansPerQr.toLocaleString()}</div>
           </div>
           <div className="bg-white/5 rounded-lg p-3">
-            <div className="text-gray-400">Leads</div>
+            <div className="text-gray-400 text-xs">Leads</div>
             <div className="font-bold text-lg">{plan.maxLeads >= 999999 ? "∞" : plan.maxLeads.toLocaleString()}</div>
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {plan.whiteLabelEnabled && <span className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1 rounded-full">✓ White Label</span>}
-          {plan.webhooksEnabled && <span className="text-xs bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full">✓ Webhooks</span>}
-          {plan.affiliatesEnabled && <span className="text-xs bg-green-600/20 text-green-300 px-3 py-1 rounded-full">✓ Afiliados</span>}
-        </div>
+        {(plan.whiteLabelEnabled || plan.webhooksEnabled || plan.affiliatesEnabled) && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {plan.whiteLabelEnabled && <span className="text-xs bg-purple-600/20 text-purple-300 px-3 py-1 rounded-full">✓ White Label</span>}
+            {plan.webhooksEnabled && <span className="text-xs bg-blue-600/20 text-blue-300 px-3 py-1 rounded-full">✓ Webhooks</span>}
+            {plan.affiliatesEnabled && <span className="text-xs bg-green-600/20 text-green-300 px-3 py-1 rounded-full">✓ Afiliados</span>}
+          </div>
+        )}
       </div>
 
-      <div className="bg-gray-900 border border-white/10 rounded-xl p-6">
-        <h3 className="font-semibold mb-3">¿Necesitás más?</h3>
-        <p className="text-sm text-gray-400 mb-4">Contactanos para actualizar tu plan o conocer opciones Enterprise.</p>
-        <a
-          href="mailto:hola@qrjuego.com?subject=Quiero actualizar mi plan"
-          className="inline-block bg-purple-600 hover:bg-purple-700 text-white text-sm px-5 py-2 rounded-lg transition-colors"
-        >
-          Contactar ventas →
-        </a>
-      </div>
+      {/* Available plans grid */}
+      {!isCanceled && allPlans.length > 0 && (
+        <div>
+          <h3 className="font-semibold text-sm text-gray-400 uppercase tracking-wider mb-3">Planes disponibles</h3>
+          <div className="grid gap-3">
+            {allPlans.map((p) => {
+              const isCurrent = p.id === plan.id;
+              const isUpgrade = p.price > plan.price;
+              const isDowngrade = p.price < plan.price && p.price > 0;
+
+              return (
+                <div
+                  key={p.id}
+                  className={`bg-gray-900 border rounded-xl p-4 transition-colors ${
+                    isCurrent
+                      ? "border-purple-500/60 bg-purple-900/10"
+                      : "border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">{p.name}</span>
+                          {isCurrent && (
+                            <span className="text-xs bg-purple-600/30 text-purple-300 px-2 py-0.5 rounded-full">Plan actual</span>
+                          )}
+                        </div>
+                        {p.description && (
+                          <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>
+                        )}
+                        <div className="flex gap-3 mt-1.5 text-xs text-gray-400">
+                          <span>{p.maxQrGames} juegos</span>
+                          <span>·</span>
+                          <span>{p.maxScansPerQr.toLocaleString()} escaneos</span>
+                          <span>·</span>
+                          <span>{p.maxLeads >= 999999 ? "∞" : p.maxLeads.toLocaleString()} leads</span>
+                        </div>
+                        <div className="flex gap-1.5 mt-1.5">
+                          {p.whiteLabelEnabled && <span className="text-xs bg-purple-900/40 text-purple-400 px-1.5 py-0.5 rounded">White Label</span>}
+                          {p.webhooksEnabled && <span className="text-xs bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded">Webhooks</span>}
+                          {p.affiliatesEnabled && <span className="text-xs bg-green-900/40 text-green-400 px-1.5 py-0.5 rounded">Afiliados</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 ml-4 shrink-0">
+                      <div className="text-right">
+                        <div className="font-bold text-lg">
+                          {p.price === 0 ? "Gratis" : `$${p.price}`}
+                        </div>
+                        {p.price > 0 && <div className="text-xs text-gray-500">USD/mes</div>}
+                      </div>
+
+                      {!isCurrent && (
+                        <button
+                          onClick={() => setConfirm({ type: "change", plan: p })}
+                          className={`text-sm px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+                            isUpgrade
+                              ? "bg-purple-600 hover:bg-purple-700 text-white"
+                              : "bg-white/10 hover:bg-white/20 text-gray-200"
+                          }`}
+                        >
+                          {isUpgrade ? "Subir plan" : isDowngrade ? "Bajar plan" : "Cambiar"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel subscription */}
+      {!isCanceled && org.subscriptionStatus !== "CANCELED" && (
+        <div className="bg-gray-900 border border-white/10 rounded-xl p-5">
+          <h3 className="font-semibold text-red-400 mb-1">Cancelar suscripción</h3>
+          <p className="text-sm text-gray-400 mb-3">
+            Podés cancelar en cualquier momento. Mantendrás acceso hasta el fin del período actual.
+          </p>
+          <button
+            onClick={() => setConfirm({ type: "cancel" })}
+            className="text-sm text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/60 px-4 py-2 rounded-lg transition-colors"
+          >
+            Cancelar suscripción
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation modal */}
+      {confirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-white/20 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            {confirm.type === "cancel" ? (
+              <>
+                <h3 className="font-bold text-lg mb-2 text-red-400">¿Cancelar suscripción?</h3>
+                <p className="text-sm text-gray-400 mb-5">
+                  Tu cuenta pasará a estado cancelado. Mantendrás acceso hasta el fin del período actual y luego no podrás crear nuevos juegos.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3 className="font-bold text-lg mb-2">
+                  {confirm.plan.price > plan.price ? "Subir" : "Cambiar"} al plan {confirm.plan.name}
+                </h3>
+                <p className="text-sm text-gray-400 mb-2">
+                  Pasarás del plan <strong>{plan.name}</strong> al plan <strong>{confirm.plan.name}</strong>
+                  {confirm.plan.price > 0 ? ` ($${confirm.plan.price} USD/mes)` : " (Gratis)"}.
+                </p>
+                <p className="text-xs text-gray-500 mb-5">
+                  El cambio se aplica de inmediato. El cobro se ajustará en tu próximo ciclo de facturación.
+                </p>
+              </>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirm(null)}
+                disabled={loading}
+                className="flex-1 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={execute}
+                disabled={loading}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium disabled:opacity-50 ${
+                  confirm.type === "cancel"
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "bg-purple-600 hover:bg-purple-700 text-white"
+                }`}
+              >
+                {loading ? "Procesando..." : confirm.type === "cancel" ? "Sí, cancelar" : "Confirmar cambio"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

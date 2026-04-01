@@ -16,15 +16,29 @@ export default async function SettingsPage() {
   });
   if (!org) redirect("/login");
 
-  const webhooks = await prisma.webhookEndpoint.findMany({
-    where: { organizationId: org.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const [webhooks, allPlans] = await Promise.all([
+    prisma.webhookEndpoint.findMany({
+      where: { organizationId: org.id },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.plan.findMany({
+      where: { isPublic: true, isActive: true },
+      orderBy: { sortOrder: "asc" },
+    }),
+  ]);
+
+  const currentSubscription = org.subscriptions[0] ?? null;
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold mb-6">Configuración</h1>
-      <SettingsClient org={org} plan={org.plan} webhooks={webhooks} />
+      <SettingsClient
+        org={org}
+        plan={org.plan}
+        webhooks={webhooks}
+        allPlans={allPlans}
+        currentSubscription={currentSubscription}
+      />
     </div>
   );
 }
