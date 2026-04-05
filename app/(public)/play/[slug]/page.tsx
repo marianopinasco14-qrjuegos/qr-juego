@@ -366,7 +366,7 @@ export default function PlayPage() {
             {campaign.prizes && campaign.prizes.filter((p:any)=>p.stock>p.deliveredCount).length>0 && (
               <div className="space-y-3">
                 <p className="text-white/40 text-xs text-center uppercase tracking-widest">Premios disponibles</p>
-                {campaign.prizes.filter((p:any)=>p.stock>p.deliveredCount).map((prize:any,i:number)=>(
+                {campaign.prizes.filter((p:any)=>p.stock>p.deliveredCount).slice(0,1).map((prize:any,i:number)=>(
                   <div key={i} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
                     {prize.prizeImage && <div className="w-full aspect-square overflow-hidden max-h-72"><img src={prize.prizeImage} alt={prize.title} className="w-full h-full object-cover"/></div>}
                     <div className="p-4">
@@ -381,7 +381,6 @@ export default function PlayPage() {
                 {campaign.endDate && <p className="text-white/30 text-xs text-center">⏰ Válido hasta {new Date(campaign.endDate).toLocaleDateString("es-AR")}</p>}
               </div>
             )}
-            <UpsellBar campaign={campaign}/>
           </div>
         )}
 
@@ -405,18 +404,11 @@ export default function PlayPage() {
                   </div>
                   <p className="text-white/40 text-xs">Intento {attempt} de {campaign.attemptsPerSession}</p>
                 </div>
-                {showBetweenResult && !spinning && (
-                  <div className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-                    <p className="text-4xl mb-2">😤</p>
-                    <p className="text-white font-bold text-lg">¡Casi, casi!</p>
-                    <p className="text-white/50 text-sm mt-1">La suerte está de tu lado... ¡intentalo de nuevo!</p>
-                  </div>
-                )}
                 <button onClick={()=>{setShowBetweenResult(false);handleSpin();}}
                   disabled={spinning||attempt>=campaign.attemptsPerSession}
                   className="w-full max-w-xs py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-40"
                   style={{background:spinning?"#333":`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
-                  {spinning?<span className="flex items-center justify-center gap-2"><span className="animate-spin">🌀</span> Girando...</span>:showBetweenResult?"🎰 ¡Volver a girar!":"¡GIRAR LA RULETA! 🎰"}
+                  {spinning?<span className="flex items-center justify-center gap-2"><span className="animate-spin">🌀</span> Girando...</span>:"¡GIRAR LA RULETA! 🎰"}
                 </button>
               </>
             )}
