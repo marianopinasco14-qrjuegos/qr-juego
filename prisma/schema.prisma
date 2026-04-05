@@ -115,6 +115,10 @@ model Organization {
   customDomain       String?            @unique
   logoUrl            String?
   primaryColor       String             @default("#7C3AED")
+  // Contacto del responsable
+  contactName        String?
+  contactWhatsapp    String?
+  businessType       String?
   // Afiliado que refirió a esta org
   referredByCode     String?
   createdAt          DateTime           @default(now())

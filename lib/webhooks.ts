@@ -4,10 +4,17 @@ import crypto from "crypto";
 export type WebhookEventType =
   | "lead.created"
   | "winner.created"
+  | "winner.major"
+  | "winner.consolation"
   | "prize.redeemed"
   | "campaign.activated"
+  | "upsell.clicked"
   | "subscription.created"
-  | "subscription.canceled";
+  | "subscription.canceled"
+  | "subscription.trial_started"
+  | "subscription.trial_ending"
+  | "subscription.activated"
+  | "subscription.cancelled";
 
 interface WebhookPayload {
   event: WebhookEventType;

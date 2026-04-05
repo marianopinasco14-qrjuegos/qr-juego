@@ -16,6 +16,7 @@ interface Org {
   subscriptionStatus: string; trialEndsAt: Date | null;
   whiteLabelEnabled: boolean; customDomain: string | null;
   logoUrl: string | null; primaryColor: string;
+  contactName: string | null; contactWhatsapp: string | null; businessType: string | null;
 }
 
 interface Subscription {
@@ -80,8 +81,24 @@ export default function SettingsClient({ org, plan, webhooks, allPlans, currentS
 
 // ─── Account Tab ─────────────────────────────────────────────────────────────
 
+const BUSINESS_TYPES = [
+  "Restaurante",
+  "Bar",
+  "Comercio minorista",
+  "Agencia de marketing",
+  "Hotel",
+  "Salud y bienestar",
+  "Educación",
+  "Otro",
+];
+
 function AccountTab({ org, router }: { org: Org; router: any }) {
-  const [form, setForm] = useState({ name: org.name });
+  const [form, setForm] = useState({
+    name: org.name,
+    contactName: org.contactName ?? "",
+    contactWhatsapp: org.contactWhatsapp ?? "",
+    businessType: org.businessType ?? "",
+  });
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -106,13 +123,44 @@ function AccountTab({ org, router }: { org: Org; router: any }) {
           <label className="text-sm text-gray-400 block mb-1">Nombre del negocio</label>
           <input
             value={form.name}
-            onChange={(e) => setForm({ name: e.target.value })}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
             className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
           />
         </div>
         <div>
           <label className="text-sm text-gray-400 block mb-1">Email (no editable)</label>
           <input disabled value={org.email} className="w-full bg-gray-950 border border-white/10 rounded-lg px-4 py-2.5 text-gray-500 cursor-not-allowed" />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">Nombre completo del responsable</label>
+          <input
+            value={form.contactName}
+            onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
+            placeholder="Ej: Juan Pérez"
+            className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
+          />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">WhatsApp de contacto</label>
+          <input
+            value={form.contactWhatsapp}
+            onChange={(e) => setForm((f) => ({ ...f, contactWhatsapp: e.target.value }))}
+            placeholder="+54 9 11 1234-5678"
+            className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
+          />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">Rubro del negocio</label>
+          <select
+            value={form.businessType}
+            onChange={(e) => setForm((f) => ({ ...f, businessType: e.target.value }))}
+            className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500"
+          >
+            <option value="">Seleccioná un rubro</option>
+            {BUSINESS_TYPES.map((bt) => (
+              <option key={bt} value={bt}>{bt}</option>
+            ))}
+          </select>
         </div>
         {msg && <p className="text-sm text-green-400">{msg}</p>}
         <button type="submit" disabled={saving} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white px-5 py-2 rounded-lg text-sm font-medium">
@@ -476,8 +524,15 @@ function WhiteLabelTab({ org, router }: { org: Org; router: any }) {
 const WEBHOOK_EVENTS = [
   { id: "lead.created", label: "Lead creado" },
   { id: "winner.created", label: "Ganador generado" },
+  { id: "winner.major", label: "Premio mayor ganado" },
+  { id: "winner.consolation", label: "Premio consuelo entregado" },
   { id: "prize.redeemed", label: "Premio canjeado" },
   { id: "campaign.activated", label: "Campaña activada" },
+  { id: "upsell.clicked", label: "Click en upseller" },
+  { id: "subscription.trial_started", label: "Trial iniciado" },
+  { id: "subscription.trial_ending", label: "Trial por vencer (3 días)" },
+  { id: "subscription.activated", label: "Suscripción activada" },
+  { id: "subscription.cancelled", label: "Suscripción cancelada" },
 ];
 
 function WebhooksTab({ orgId, webhooks, router }: { orgId: string; webhooks: Webhook[]; router: any }) {
