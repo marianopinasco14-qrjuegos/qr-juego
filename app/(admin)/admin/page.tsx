@@ -26,7 +26,16 @@ export default async function AdminDashboard() {
   const recentOrgs = await prisma.organization.findMany({
     orderBy: { createdAt: "desc" },
     take: 8,
-    include: { plan: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      contactName: true,
+      subscriptionStatus: true,
+      isActive: true,
+      createdAt: true,
+      plan: { select: { name: true } },
+    },
   });
 
   const statsByStatus = await prisma.organization.groupBy({
@@ -54,6 +63,7 @@ export default async function AdminDashboard() {
     { label: "MRR", value: `$${mrr.toFixed(2)}`, icon: "💰", sub: "USD/mes" },
     { label: "Revenue hoy (est.)", value: `$${dailyRevenue.toFixed(2)}`, icon: "📅", sub: "USD" },
     { label: "Revenue semana (est.)", value: `$${weeklyRevenue.toFixed(2)}`, icon: "📆", sub: "USD" },
+    { label: "Revenue mes (est.)", value: `$${mrr.toFixed(2)}`, icon: "🗓️", sub: "USD" },
     { label: "Trials no convertidos", value: expiredTrials, icon: "⚠️", sub: "vencidos sin pagar" },
   ];
 
@@ -113,6 +123,7 @@ export default async function AdminDashboard() {
               <tr>
                 <th className="text-left p-3">Organización</th>
                 <th className="text-left p-3">Email</th>
+                <th className="text-left p-3">Titular</th>
                 <th className="text-left p-3">Plan</th>
                 <th className="text-left p-3">Estado</th>
                 <th className="text-left p-3">Creada</th>
@@ -123,6 +134,7 @@ export default async function AdminDashboard() {
                 <tr key={org.id} className="border-b border-white/5 hover:bg-white/2">
                   <td className="p-3 font-medium">{org.name}</td>
                   <td className="p-3 text-gray-400">{org.email}</td>
+                  <td className="p-3 text-gray-400 text-xs">{org.contactName ?? "—"}</td>
                   <td className="p-3">
                     <span className="bg-purple-600/20 text-purple-300 px-2 py-0.5 rounded text-xs">
                       {org.plan.name}
