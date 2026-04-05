@@ -16,6 +16,7 @@ export default function DashboardPage() {
   }, []);
 
   const convRate = stats.totalScans > 0 ? Math.round((stats.totalLeads / stats.totalScans) * 100) : 0;
+  const recentCampaigns = campaigns.slice(0, 3);
 
   return (
     <div>
@@ -50,8 +51,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <h2 className="text-white font-bold mb-4">Campañas</h2>
-      {campaigns.length === 0 ? (
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-white font-bold">Campañas recientes</h2>
+        <Link href="/campaigns" className="text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors">Ver todas →</Link>
+      </div>
+
+      {recentCampaigns.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-white/20 rounded-2xl">
           <div className="text-5xl mb-4">🎯</div>
           <p className="text-white/60 mb-4">Todavía no creaste ningún QR Juego</p>
@@ -59,7 +64,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {campaigns.map((c: any) => (
+          {recentCampaigns.map((c: any) => (
             <div key={c.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-violet-600/20">{c.gameType==="RULETA"?"🎡":c.gameType==="SLOTS"?"🎰":"🎫"}</div>
@@ -68,17 +73,14 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${c.status==="ACTIVE"?"bg-green-500/20 text-green-400":"bg-yellow-500/20 text-yellow-400"}`}>{c.status}</span>
                     <span className="text-white/40 text-xs">{c._count.leads} leads</span>
-                    <span className="text-white/40 text-xs">{c._count.scans} scans</span>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button onClick={()=>setQrModal({name:c.name,url:`${window.location.origin}/play/${c.qrSlug}`})} className="text-xs text-white/60 hover:text-white bg-white/5 px-3 py-1.5 rounded-lg transition-colors">Ver QR</button>
-                <Link href={`/play/${c.qrSlug}`} target="_blank" className="text-xs text-violet-400 hover:text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg transition-colors">Ver juego</Link>
-                <Link href={`/campaigns/${c.id}`} className="text-xs text-white/60 hover:text-white bg-white/5 px-3 py-1.5 rounded-lg transition-colors">Editar</Link>
-              </div>
             </div>
           ))}
+          {campaigns.length > 3 && (
+            <Link href="/campaigns" className="block text-center py-3 text-violet-400 hover:text-violet-300 text-sm font-medium transition-colors border border-dashed border-white/10 rounded-2xl">Ver todas las campañas ({campaigns.length})</Link>
+          )}
         </div>
       )}
 
