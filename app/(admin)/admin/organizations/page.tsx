@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import OrgActions from "./OrgActions";
+import OrgEditModal from "./OrgEditModal";
 
 interface Props {
   searchParams: { status?: string; q?: string };
@@ -26,6 +27,7 @@ export default async function OrganizationsPage({ searchParams }: Props) {
   });
 
   const plans = await prisma.plan.findMany({ orderBy: { sortOrder: "asc" } });
+  const planList = plans.map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <div className="p-6">
@@ -76,7 +78,8 @@ export default async function OrganizationsPage({ searchParams }: Props) {
               <th className="text-left p-3">Organización</th>
               <th className="text-left p-3">Email</th>
               <th className="text-left p-3">Plan</th>
-              <th className="text-left p-3">Estado</th>
+              <th className="text-left p-3">Titular</th>
+              <th className="text-left p-3">Pago</th>
               <th className="text-left p-3">Trial / Vence</th>
               <th className="text-left p-3">Campañas</th>
               <th className="text-left p-3">Leads</th>
@@ -87,7 +90,19 @@ export default async function OrganizationsPage({ searchParams }: Props) {
             {orgs.map((org) => (
               <tr key={org.id} className="border-b border-white/5 hover:bg-white/2">
                 <td className="p-3">
-                  <div className="font-medium">{org.name}</div>
+                  <OrgEditModal
+                    org={{
+                      id: org.id,
+                      name: org.name,
+                      planId: org.planId,
+                      subscriptionStatus: org.subscriptionStatus,
+                      isActive: org.isActive,
+                      contactName: org.contactName ?? null,
+                      contactWhatsapp: org.contactWhatsapp ?? null,
+                      businessType: org.businessType ?? null,
+                    }}
+                    plans={planList}
+                  />
                   <div className="text-xs text-gray-500">{org.slug}</div>
                 </td>
                 <td className="p-3 text-gray-400">{org.email}</td>
@@ -96,12 +111,13 @@ export default async function OrganizationsPage({ searchParams }: Props) {
                     orgId={org.id}
                     currentPlanId={org.planId}
                     isActive={org.isActive}
-                    plans={plans.map((p) => ({ id: p.id, name: p.name }))}
+                    plans={planList}
                     mode="plan"
                   />
                 </td>
+                <td className="p-3 text-gray-400 text-xs">{org.contactName ?? "—"}</td>
                 <td className="p-3">
-                  <StatusBadge status={org.subscriptionStatus} active={org.isActive} />
+                  <PaymentBadge status={org.subscriptionStatus} />
                 </td>
                 <td className="p-3 text-xs text-gray-400">
                   {org.trialEndsAt
@@ -115,7 +131,7 @@ export default async function OrganizationsPage({ searchParams }: Props) {
                     orgId={org.id}
                     currentPlanId={org.planId}
                     isActive={org.isActive}
-                    plans={plans.map((p) => ({ id: p.id, name: p.name }))}
+                    plans={planList}
                     mode="actions"
                   />
                 </td>
@@ -123,7 +139,7 @@ export default async function OrganizationsPage({ searchParams }: Props) {
             ))}
             {orgs.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-6 text-center text-gray-500">
+                <td colSpan={9} className="p-6 text-center text-gray-500">
                   No se encontraron organizaciones.
                 </td>
               </tr>
@@ -135,8 +151,7 @@ export default async function OrganizationsPage({ searchParams }: Props) {
   );
 }
 
-function StatusBadge({ status, active }: { status: string; active: boolean }) {
-  if (!active) return <span className="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded">Suspendida</span>;
+function PaymentBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     TRIAL: "bg-yellow-500/20 text-yellow-300",
     ACTIVE: "bg-green-500/20 text-green-300",

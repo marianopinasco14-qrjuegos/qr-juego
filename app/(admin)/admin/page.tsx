@@ -2,13 +2,26 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
-  const [orgs, users, plans, coupons, affiliates] = await Promise.all([
+  const today = new Date();
+
+  const [orgs, users, plans, coupons, affiliates, expiredTrials, activeOrgsWithPlan] = await Promise.all([
     prisma.organization.count(),
     prisma.user.count(),
     prisma.plan.count(),
     prisma.coupon.count({ where: { isActive: true } }),
     prisma.affiliate.count(),
+    prisma.organization.count({
+      where: { subscriptionStatus: "TRIAL", trialEndsAt: { lt: today }, isActive: true },
+    }),
+    prisma.organization.findMany({
+      where: { subscriptionStatus: "ACTIVE", isActive: true },
+      select: { plan: { select: { price: true } } },
+    }),
   ]);
+
+  const mrr = activeOrgsWithPlan.reduce((sum, org) => sum + org.plan.price, 0);
+  const dailyRevenue = mrr / 30;
+  const weeklyRevenue = dailyRevenue * 7;
 
   const recentOrgs = await prisma.organization.findMany({
     orderBy: { createdAt: "desc" },
@@ -37,6 +50,13 @@ export default async function AdminDashboard() {
     { label: "Cancelados", value: statusMap["CANCELED"] ?? 0, icon: "❌", href: "/admin/organizations?status=CANCELED" },
   ];
 
+  const monetizationMetrics = [
+    { label: "MRR", value: `$${mrr.toFixed(2)}`, icon: "💰", sub: "USD/mes" },
+    { label: "Revenue hoy (est.)", value: `$${dailyRevenue.toFixed(2)}`, icon: "📅", sub: "USD" },
+    { label: "Revenue semana (est.)", value: `$${weeklyRevenue.toFixed(2)}`, icon: "📆", sub: "USD" },
+    { label: "Trials no convertidos", value: expiredTrials, icon: "⚠️", sub: "vencidos sin pagar" },
+  ];
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Panel Superadmin</h1>
@@ -54,6 +74,29 @@ export default async function AdminDashboard() {
             <div className="text-sm text-gray-400">{s.label}</div>
           </Link>
         ))}
+      </div>
+
+      {/* Métricas de monetización */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="font-bold text-lg">Métricas de monetización</h2>
+          <a
+            href="/api/admin/export/trials-expired"
+            className="text-xs bg-white/10 hover:bg-white/20 text-gray-300 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            ⬇️ Exportar trials vencidos
+          </a>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {monetizationMetrics.map((m) => (
+            <div key={m.label} className="bg-[#1a1a2e] border border-white/10 rounded-xl p-4">
+              <div className="text-2xl mb-1">{m.icon}</div>
+              <div className="text-2xl font-bold text-green-300">{m.value}</div>
+              <div className="text-sm text-gray-400">{m.label}</div>
+              <div className="text-xs text-gray-600 mt-0.5">{m.sub}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Últimas organizaciones */}

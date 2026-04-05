@@ -80,7 +80,27 @@ export default function RegisterPage() {
       <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Formulario */}
         <div className="bg-[#1a1a2e] rounded-2xl p-8 border border-white/10">
-          <h2 className="text-xl font-bold mb-6">Crear cuenta</h2>
+          <h2 className="text-xl font-bold mb-4">Crear cuenta</h2>
+
+          {/* Google OAuth */}
+          <a
+            href="/api/auth/google"
+            className="flex items-center justify-center gap-3 w-full py-3 rounded-lg font-medium text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors mb-4"
+          >
+            <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
+              <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.4 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
+              <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16.1 19 13 24 13c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.4 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+              <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.3 35.5 26.8 36 24 36c-5.2 0-9.6-3.3-11.3-8H6.1C9.5 35.6 16.3 44 24 44z"/>
+              <path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.5l6.2 5.2C37 39 44 34 44 24c0-1.3-.1-2.7-.4-3.9z"/>
+            </svg>
+            Continuar con Google
+          </a>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-white/30 text-xs">o completá el formulario</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-sm text-gray-400 block mb-1">Tu nombre</label>

@@ -7,6 +7,8 @@ export default async function AffiliatesPage() {
     include: { _count: { select: { referrals: true } } },
   });
 
+  const currentMonth = new Date().toISOString().slice(0, 7); // "2026-04"
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -53,7 +55,15 @@ export default async function AffiliatesPage() {
                   </span>
                 </td>
                 <td className="p-3">
-                  <AffiliateForm mode="edit" affiliate={a} />
+                  <div className="flex items-center gap-2">
+                    <AffiliateForm mode="edit" affiliate={a} />
+                    <a
+                      href={`/api/admin/affiliates/${a.id}/liquidacion?mes=${currentMonth}`}
+                      className="text-xs bg-white/10 hover:bg-white/20 text-gray-300 px-2 py-1 rounded transition-colors whitespace-nowrap"
+                    >
+                      ⬇️ Liquidación
+                    </a>
+                  </div>
                 </td>
               </tr>
             ))}
