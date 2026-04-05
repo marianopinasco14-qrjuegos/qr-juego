@@ -63,7 +63,6 @@ export default async function AdminDashboard() {
     { label: "MRR", value: `$${mrr.toFixed(2)}`, icon: "💰", sub: "USD/mes" },
     { label: "Revenue hoy (est.)", value: `$${dailyRevenue.toFixed(2)}`, icon: "📅", sub: "USD" },
     { label: "Revenue semana (est.)", value: `$${weeklyRevenue.toFixed(2)}`, icon: "📆", sub: "USD" },
-    { label: "Revenue mes (est.)", value: `$${mrr.toFixed(2)}`, icon: "🗓️", sub: "USD" },
     { label: "Trials no convertidos", value: expiredTrials, icon: "⚠️", sub: "vencidos sin pagar" },
   ];
 
