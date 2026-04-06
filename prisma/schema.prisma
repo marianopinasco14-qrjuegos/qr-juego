@@ -301,6 +301,7 @@ model Campaign {
   name               String
   gameType           GameType       @default(RULETA)
   attemptsPerSession Int            @default(1)
+  participationLimit String         @default("once_email")
   status             CampaignStatus @default(DRAFT)
   logoUrl            String?
   headerImageUrl     String?

@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     if (!scanLimit.allowed) return NextResponse.json({ error: scanLimit.reason }, { status: 403 });
     const leadLimit = await checkLeadLimit(campaign.organizationId);
     if (!leadLimit.allowed) return NextResponse.json({ error: leadLimit.reason }, { status: 403 });
-    const fraudCheck = await checkFraud({ campaignId, email, whatsapp, ipAddress, deviceToken });
+    const fraudCheck = await checkFraud({ campaignId, email, whatsapp, ipAddress, deviceToken, participationLimit: campaign.participationLimit });
     if (!fraudCheck.allowed) return NextResponse.json({ error: fraudCheck.reason }, { status: 409 });
     const lead = await prisma.lead.create({ data: { campaignId, email, whatsapp, extraFields: extraFields ?? {}, ipAddress, deviceToken } });
     await prisma.organization.update({ where: { id: campaign.organizationId }, data: { totalLeads: { increment: 1 } } });

@@ -10,7 +10,7 @@ type Campaign = {
   attemptsPerSession: number; formFields: any[]; upsellEnabled: boolean;
   upsellTitle?: string; upsellPrice?: number; upsellCurrency?: string;
   upsellLink?: string; upsellImage?: string; upsellImageUrl?: string;
-  endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string;
+  endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string; logoUrl?: string;
 };
 type PrizeResult = {
   isWinner: boolean; prizeTitle?: string; redemptionCode?: string;
@@ -327,11 +327,15 @@ export default function PlayPage() {
       <div className="flex-1 max-w-md mx-auto w-full px-5 pt-8 pb-10">
 
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-xl"
-            style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
-            <span className="text-3xl">{campaign.gameType==="RULETA"?"🎡":campaign.gameType==="SLOTS"?"🎰":"🎫"}</span>
-          </div>
-          <h1 className="text-white text-2xl font-black tracking-tight">{campaign.name}</h1>
+          {campaign.logoUrl ? (
+            <img src={campaign.logoUrl} className="w-16 h-16 object-contain rounded-xl mb-2 mx-auto" alt="logo"/>
+          ) : (
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-xl"
+              style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
+              <span className="text-3xl">{campaign.gameType==="SLOTS"?"🎰":"🎫"}</span>
+            </div>
+          )}
+          <h1 className="text-white text-2xl font-black tracking-tight">{campaign.gameType==="RASCA_Y_GANA"?"Rasca y Gana":campaign.gameType==="SLOTS"?"Tragamonedas":"Juego"}</h1>
           <p className="text-white/40 text-sm mt-1">
             {step==="form"?"¡Completá tus datos y participá!":step==="game"?"¡Descubrí tu premio!":"Resultado de tu participación"}
           </p>
