@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
       await tx.organization.update({ where: { id: lead.campaign.organizationId }, data: { totalScans: { increment: 1 } } });
       if (!playerWon) {
         const consolePrize = await tx.consolePrize.findUnique({ where: { campaignId } });
-        return { isWinner: false, consolePrizeTitle: consolePrize?.title ?? "Mejor suerte!", consolePrizeCoupon: consolePrize?.couponCode ?? undefined };
+        return { isWinner: false, consolePrizeTitle: consolePrize?.title ?? null, consolePrizeCoupon: consolePrize?.couponCode ?? null };
       }
       const prizeResult = await executePrizeEngine(campaignId, leadId, tx);
       if (prizeResult.isWinner) await tx.scan.updateMany({ where: { leadId, campaignId }, data: { isWinner: true } });
@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
     const name = extra?.nombre || extra?.name || lead.email.split("@")[0];
     if (result.isWinner) {
       await sendWinnerEmail({ campaignId, toEmail: lead.email, toName: name, prizeName: result.prizeTitle!, redemptionCode: result.redemptionCode!, expiresAt: result.expiresAt! });
-    } else {
-      await sendConsoleEmail({ campaignId, toEmail: lead.email, toName: name, couponCode: result.consolePrizeCoupon ?? "CONSUELO" });
+    } else if (result.consolePrizeCoupon) {
+      await sendConsoleEmail({ campaignId, toEmail: lead.email, toName: name, couponCode: result.consolePrizeCoupon });
     }
     return NextResponse.json({ prizeResult: result });
   } catch (error) {

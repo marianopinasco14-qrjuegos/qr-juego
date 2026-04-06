@@ -25,38 +25,46 @@ function UpsellBar({ campaign }: { campaign: Campaign }) {
     : '#';
   return (
     <a href={link} target="_blank" rel="noopener noreferrer"
-      className="block w-full rounded-2xl overflow-hidden border border-yellow-400/30 shadow-xl mt-6"
-      style={{background: 'linear-gradient(135deg, #1a1a2e, #16213e)'}}>
+      className="block w-full rounded-2xl overflow-hidden shadow-xl mt-6"
+      style={{background: 'linear-gradient(135deg, #f59e0b, #d97706)'}}>
       {img && (
         <div className="w-full aspect-square overflow-hidden">
           <img src={img} alt={campaign.upsellTitle} className="w-full h-full object-cover"/>
         </div>
       )}
-      <div className="p-4 flex items-center justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-yellow-300 font-black text-base truncate">🔥 {campaign.upsellTitle}</p>
-          {campaign.upsellPrice && (
-            <p className="text-yellow-400 text-sm font-bold mt-0.5">
-              {campaign.upsellCurrency} {campaign.upsellPrice.toLocaleString()}
-              <span className="text-yellow-400/60 font-normal"> · Oferta exclusiva</span>
-            </p>
-          )}
+      <div className="p-4">
+        <p className="text-black/70 text-xs font-bold uppercase tracking-widest mb-2">🛍️ Oferta exclusiva para participantes</p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-black font-black text-lg truncate">{campaign.upsellTitle}</p>
+            {campaign.upsellPrice && (
+              <p className="text-black/80 text-sm font-bold mt-0.5">
+                {campaign.upsellCurrency} {campaign.upsellPrice.toLocaleString()}
+              </p>
+            )}
+          </div>
+          <div className="shrink-0 bg-black text-white font-black text-sm px-6 py-3 rounded-xl">VER →</div>
         </div>
-        <div className="shrink-0 bg-yellow-400 text-gray-900 font-black text-sm px-4 py-2 rounded-xl">VER →</div>
       </div>
     </a>
   );
 }
 
-function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number }) {
+function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string }) {
   const SYMBOLS = ['🍒','🌟','💎','🎯','🍀'];
   const [attempt, setAttempt] = useState(0);
   const [currentCard, setCurrentCard] = useState(() => Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
-  const [revealed, setRevealed] = useState(false);
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [revealing, setRevealing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const isMatch = currentCard[0] === currentCard[1] && currentCard[1] === currentCard[2];
 
-  const handleReveal = () => { setRevealed(true); setShowResult(true); };
+  const handleReveal = () => {
+    setRevealing(true);
+    setRevealedCount(1);
+    setTimeout(() => setRevealedCount(2), 600);
+    setTimeout(() => { setRevealedCount(3); setShowResult(true); setRevealing(false); }, 1200);
+  };
 
   const handleNext = async () => {
     if (isMatch || attempt >= attemptsPerSession - 1) {
@@ -64,18 +72,20 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
     } else {
       setAttempt(a => a + 1);
       setCurrentCard(Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
-      setRevealed(false);
+      setRevealedCount(0);
+      setRevealing(false);
       setShowResult(false);
     }
   };
 
   return (
     <div className="w-full space-y-6">
+      <p className="text-white/50 text-sm text-center">{winnerSymbol} Si los 3 {winnerSymbol} coinciden, ¡ganás!</p>
       <div className="flex gap-3 justify-center">
         {currentCard.map((symbol, i) => (
           <div key={i} className="w-24 h-24 rounded-2xl border-2 flex items-center justify-center"
-            style={{borderColor: primaryColor + '60', background: revealed ? primaryColor + '20' : 'rgba(255,255,255,0.05)'}}>
-            <span className="text-5xl">{revealed ? symbol : '🎴'}</span>
+            style={{borderColor: primaryColor + '60', background: i < revealedCount ? primaryColor + '20' : 'rgba(255,255,255,0.05)'}}>
+            <span className={`text-5xl${i < revealedCount ? ' transition-all duration-300 scale-110' : ''}`}>{i < revealedCount ? symbol : '🎴'}</span>
           </div>
         ))}
       </div>
@@ -88,9 +98,9 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
         </div>
       )}
       <div className="flex flex-col gap-3">
-        {!revealed ? (
-          <button onClick={handleReveal}
-            className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
+        {revealedCount < 3 ? (
+          <button onClick={handleReveal} disabled={revealing}
+            className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-60"
             style={{background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
             ✨ ¡Descubrir!
           </button>
@@ -178,79 +188,6 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
   );
 }
 
-const ROULETTE_NUMBERS = [0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
-const RED_NUMBERS = new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
-
-function RouletteWheel({ spinning, onSpinEnd, primaryColor }: { spinning: boolean; onSpinEnd: () => void; primaryColor: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const angleRef = useRef(0);
-  const velocityRef = useRef(0);
-  const animFrameRef = useRef<number>(0);
-  const hasEndedRef = useRef(false);
-
-  const drawWheel = (angle: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-    const cx = canvas.width/2, cy = canvas.height/2;
-    const outerR = cx-4, innerR = cx-36, numberR = cx-22;
-    const total = ROULETTE_NUMBERS.length;
-    const sliceAngle = (2*Math.PI)/total;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.beginPath(); ctx.arc(cx,cy,outerR+6,0,2*Math.PI); ctx.fillStyle="#b8860b"; ctx.fill();
-    ctx.beginPath(); ctx.arc(cx,cy,outerR,0,2*Math.PI); ctx.fillStyle="#1a1a1a"; ctx.fill();
-    for (let i=0; i<total; i++) {
-      const startA = angle+i*sliceAngle-Math.PI/2;
-      const endA = startA+sliceAngle;
-      const num = ROULETTE_NUMBERS[i];
-      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,outerR,startA,endA); ctx.closePath();
-      ctx.fillStyle = num===0?"#16a34a":RED_NUMBERS.has(num)?"#dc2626":"#1c1c1c";
-      ctx.fill(); ctx.strokeStyle="rgba(255,215,0,0.4)"; ctx.lineWidth=0.8; ctx.stroke();
-      const textAngle = startA+sliceAngle/2;
-      const tx=cx+numberR*Math.cos(textAngle), ty=cy+numberR*Math.sin(textAngle);
-      ctx.save(); ctx.translate(tx,ty); ctx.rotate(textAngle+Math.PI/2);
-      ctx.fillStyle="white"; ctx.font="bold 9px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText(String(num),0,0); ctx.restore();
-    }
-    ctx.beginPath(); ctx.arc(cx,cy,innerR,0,2*Math.PI);
-    const grad=ctx.createRadialGradient(cx,cy,0,cx,cy,innerR);
-    grad.addColorStop(0,"#2d2d2d"); grad.addColorStop(1,"#0d0d0d");
-    ctx.fillStyle=grad; ctx.fill(); ctx.strokeStyle="#b8860b"; ctx.lineWidth=3; ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx,cy,20,0,2*Math.PI); ctx.fillStyle="#b8860b"; ctx.fill();
-    ctx.beginPath(); ctx.arc(cx,cy,14,0,2*Math.PI); ctx.fillStyle="#111"; ctx.fill();
-    ctx.fillStyle="#ffd700"; ctx.font="bold 14px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
-    ctx.fillText("★",cx,cy);
-  };
-
-  useEffect(()=>{drawWheel(angleRef.current);},[]);
-  useEffect(()=>{
-    if (!spinning) return;
-    hasEndedRef.current=false;
-    velocityRef.current=0.4+Math.random()*0.2;
-    const animate=()=>{
-      velocityRef.current*=0.992;
-      angleRef.current+=velocityRef.current;
-      drawWheel(angleRef.current);
-      if (velocityRef.current>0.003) { animFrameRef.current=requestAnimationFrame(animate); }
-      else { if (!hasEndedRef.current) { hasEndedRef.current=true; onSpinEnd(); } }
-    };
-    animFrameRef.current=requestAnimationFrame(animate);
-    return ()=>cancelAnimationFrame(animFrameRef.current);
-  },[spinning]);
-
-  return (
-    <div className="relative flex items-center justify-center">
-      <div className="absolute inset-0 rounded-full blur-3xl opacity-30" style={{background:`radial-gradient(circle, ${primaryColor}, transparent)`}}/>
-      <canvas ref={canvasRef} width={320} height={320} className="relative drop-shadow-2xl rounded-full"/>
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 z-10">
-        <div className="flex flex-col items-center">
-          <div className="w-4 h-4 rounded-full bg-white shadow-lg border-2 border-yellow-400"/>
-          <div className="w-0 h-0 border-l-[7px] border-r-[7px] border-t-[12px] border-l-transparent border-r-transparent border-t-white"/>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function PlayPage() {
   const { slug } = useParams();
@@ -258,14 +195,10 @@ export default function PlayPage() {
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<"form"|"game"|"result">("form");
   const [leadId, setLeadId] = useState("");
-  const [attempt, setAttempt] = useState(0);
   const [prizeResult, setPrizeResult] = useState<PrizeResult | null>(null);
-  const [spinning, setSpinning] = useState(false);
-  const [showBetweenResult, setShowBetweenResult] = useState(false);
   const [form, setForm] = useState({email:"", whatsapp:"", extra:{} as Record<string,string>});
   const [formError, setFormError] = useState("");
   const [registering, setRegistering] = useState(false);
-  const apiResultRef = useRef<any>(null);
 
   useEffect(()=>{
     fetch(`/api/play/campaign?slug=${slug}`)
@@ -281,24 +214,6 @@ export default function PlayPage() {
       setLeadId(data.leadId); setStep("game");
     } catch { setFormError("Error de conexión"); }
     setRegistering(false);
-  }
-
-  async function handleSpin() {
-    if (spinning||attempt>=campaign!.attemptsPerSession||showBetweenResult) return;
-    const nextAttempt=attempt+1; setAttempt(nextAttempt); setSpinning(true); setShowBetweenResult(false); apiResultRef.current=null;
-    fetch("/api/play/spin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,leadId,attemptNumber:nextAttempt})}).then(r=>r.json()).then(data=>{apiResultRef.current=data;}).catch(()=>{});
-  }
-
-  function handleSpinEnd() {
-    setSpinning(false);
-    const check=()=>{
-      if (apiResultRef.current) {
-        const data=apiResultRef.current;
-        if (data.isLastAttempt) { setPrizeResult(data.prizeResult); setTimeout(()=>setStep("result"),600); }
-        else { setShowBetweenResult(true); }
-      } else { setTimeout(check,300); }
-    };
-    setTimeout(check,300);
   }
 
   async function handleScratchComplete(playerWon: boolean) {
@@ -346,7 +261,7 @@ export default function PlayPage() {
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
               <p className="text-white/80 text-sm leading-relaxed">
                 🎯 <strong className="text-white">¿Cómo participar?</strong><br/>
-                Completá tus datos, {campaign.gameType==="RASCA_Y_GANA"?"descubrí las casillas":campaign.gameType==="SLOTS"?"tirá los rodillos":"girá la ruleta"} y descubrí si ganaste. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
+                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos":"descubrí las casillas"} y descubrí si ganaste. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
               </p>
             </div>
             <form onSubmit={handleRegister} className="space-y-3">
@@ -392,29 +307,8 @@ export default function PlayPage() {
           <div className="flex flex-col items-center gap-5">
             {campaign.gameType==="SLOTS" ? (
               <SlotsGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onComplete={handleScratchComplete}/>
-            ) : campaign.gameType==="RASCA_Y_GANA" ? (
-              <ScratchCard primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} attemptsPerSession={campaign.attemptsPerSession} onComplete={handleScratchComplete}/>
             ) : (
-              <RouletteWheel spinning={spinning} onSpinEnd={handleSpinEnd} primaryColor={campaign.primaryColor}/>
-            )}
-            {campaign.gameType==="RULETA" && (
-              <>
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex gap-2">
-                    {Array.from({length:campaign.attemptsPerSession},(_,i)=>(
-                      <div key={i} className={`w-4 h-4 rounded-full transition-all duration-500 ${i<attempt?"scale-110":"opacity-20"}`}
-                        style={{backgroundColor:i<attempt?campaign.primaryColor:"white",boxShadow:i<attempt?`0 0 8px ${campaign.primaryColor}`:"none"}}/>
-                    ))}
-                  </div>
-                  <p className="text-white/40 text-xs">Intento {attempt} de {campaign.attemptsPerSession}</p>
-                </div>
-                <button onClick={()=>{setShowBetweenResult(false);handleSpin();}}
-                  disabled={spinning||attempt>=campaign.attemptsPerSession}
-                  className="w-full max-w-xs py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-40"
-                  style={{background:spinning?"#333":`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
-                  {spinning?<span className="flex items-center justify-center gap-2"><span className="animate-spin">🌀</span> Girando...</span>:"¡GIRAR LA RULETA! 🎰"}
-                </button>
-              </>
+              <ScratchCard primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} attemptsPerSession={campaign.attemptsPerSession} onComplete={handleScratchComplete} winnerSymbol="🍀"/>
             )}
             <UpsellBar campaign={campaign}/>
           </div>
@@ -438,7 +332,12 @@ export default function PlayPage() {
                     <p className="text-white/40 text-xs mb-1">Código de canje</p>
                     <p className="text-white font-mono font-bold tracking-widest text-sm">{prizeResult.redemptionCode}</p>
                   </div>
-                  {prizeResult.expiresAt && <p className="text-white/30 text-xs">⏰ Válido hasta: {new Date(prizeResult.expiresAt).toLocaleDateString("es-AR")}</p>}
+                  {prizeResult.expiresAt && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl px-4 py-3">
+                      <p className="text-yellow-400 text-sm font-bold">⏰ Válido para canjear hasta:</p>
+                      <p className="text-white font-bold text-base mt-1">{new Date(prizeResult.expiresAt).toLocaleDateString("es-AR", {day:"numeric",month:"long",year:"numeric"})}</p>
+                    </div>
+                  )}
                 </div>
                 <p className="text-white/40 text-xs">📧 Enviamos el premio a tu email</p>
                 {campaign.closedRedirectUrl && <a href={campaign.closedRedirectUrl} className="w-full py-4 rounded-2xl font-bold text-white text-center block" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>Ir al sitio →</a>}
@@ -446,20 +345,29 @@ export default function PlayPage() {
             ) : (
               <>
                 <div className="text-7xl">🎟️</div>
-                <div>
-                  <p className="text-white font-black text-2xl">¡Gracias por participar!</p>
-                  <p className="text-white/50 text-sm mt-1">Tenés un regalo especial para vos</p>
-                </div>
-                <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 space-y-3">
-                  <p className="text-white font-bold text-lg">{prizeResult.consolePrizeTitle}</p>
-                  {prizeResult.consolePrizeCoupon && (
-                    <div className="border-2 border-dashed rounded-2xl px-6 py-5" style={{borderColor:`${campaign.primaryColor}60`}}>
-                      <p className="text-white/40 text-xs mb-2">Tu código especial</p>
-                      <p className="font-mono font-black text-2xl tracking-widest" style={{color:campaign.secondaryColor}}>{prizeResult.consolePrizeCoupon}</p>
+                {prizeResult.consolePrizeTitle ? (
+                  <>
+                    <div>
+                      <p className="text-white font-black text-2xl">¡Gracias por participar!</p>
+                      <p className="text-white/50 text-sm mt-1">Tenés un regalo especial para vos</p>
                     </div>
-                  )}
-                </div>
-                <p className="text-white/40 text-xs">📧 Enviamos tu código al email</p>
+                    <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 space-y-3">
+                      <p className="text-white font-bold text-lg">{prizeResult.consolePrizeTitle}</p>
+                      {prizeResult.consolePrizeCoupon && (
+                        <div className="border-2 border-dashed rounded-2xl px-6 py-5" style={{borderColor:`${campaign.primaryColor}60`}}>
+                          <p className="text-white/40 text-xs mb-2">Tu código especial</p>
+                          <p className="font-mono font-black text-2xl tracking-widest" style={{color:campaign.secondaryColor}}>{prizeResult.consolePrizeCoupon}</p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-white/40 text-xs">📧 Enviamos tu código al email</p>
+                  </>
+                ) : (
+                  <div>
+                    <p className="text-white font-black text-2xl">¡Gracias por participar!</p>
+                    <p className="text-white/50 text-sm mt-1">Seguí participando para ganar un premio.</p>
+                  </div>
+                )}
                 {campaign.closedRedirectUrl && <a href={campaign.closedRedirectUrl} className="w-full py-4 rounded-2xl font-bold text-white text-center block" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>Ir al sitio →</a>}
               </>
             )}
