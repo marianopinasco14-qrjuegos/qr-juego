@@ -76,6 +76,21 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={()=>setQrModal({name:c.name,url:`${window.location.origin}/play/${c.qrSlug}`})}
+                  className="text-xs text-white/60 hover:text-white bg-white/5 px-3 py-1.5 rounded-lg transition-colors">
+                  Ver QR
+                </button>
+                <a href={`/play/${c.qrSlug}`} target="_blank"
+                  className="text-xs text-violet-400 hover:text-violet-300 bg-violet-500/10 px-3 py-1.5 rounded-lg transition-colors">
+                  Ver juego
+                </a>
+                <a href={`/campaigns/${c.id}`}
+                  className="text-xs text-white/60 hover:text-white bg-white/5 px-3 py-1.5 rounded-lg transition-colors">
+                  Editar
+                </a>
+              </div>
             </div>
           ))}
           {campaigns.length > 3 && (
