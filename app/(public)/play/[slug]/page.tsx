@@ -19,7 +19,7 @@ type PrizeResult = {
 
 function UpsellBar({ campaign }: { campaign: Campaign }) {
   if (!campaign.upsellEnabled || !campaign.upsellTitle) return null;
-  const img = campaign.upsellImage || campaign.upsellImageUrl;
+  const img = campaign.upsellImageUrl || campaign.upsellImage;
   const link = campaign.upsellLink
     ? (campaign.upsellLink.startsWith('http') ? campaign.upsellLink : 'https://' + campaign.upsellLink)
     : '#';
@@ -62,8 +62,8 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
   const handleReveal = () => {
     setRevealing(true);
     setRevealedCount(1);
-    setTimeout(() => setRevealedCount(2), 600);
-    setTimeout(() => { setRevealedCount(3); setShowResult(true); setRevealing(false); }, 1200);
+    setTimeout(() => setRevealedCount(2), 1000);
+    setTimeout(() => { setRevealedCount(3); setShowResult(true); setRevealing(false); }, 2000);
   };
 
   const handleNext = async () => {
@@ -80,12 +80,16 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
 
   return (
     <div className="w-full space-y-6">
-      <p className="text-white/50 text-sm text-center">{winnerSymbol} Si los 3 {winnerSymbol} coinciden, ¡ganás!</p>
+      <div className="text-center bg-white/10 border border-white/20 rounded-2xl p-4 mb-2">
+        <p className="text-white font-black text-xl">🍀🍀🍀</p>
+        <p className="text-white font-bold text-base mt-1">¡3 tréboles = GANASTE!</p>
+        <p className="text-white/50 text-xs mt-1">Descubrí las casillas y descubrí tu suerte</p>
+      </div>
       <div className="flex gap-3 justify-center">
         {currentCard.map((symbol, i) => (
           <div key={i} className="w-24 h-24 rounded-2xl border-2 flex items-center justify-center"
             style={{borderColor: primaryColor + '60', background: i < revealedCount ? primaryColor + '20' : 'rgba(255,255,255,0.05)'}}>
-            <span className={`text-5xl${i < revealedCount ? ' transition-all duration-300 scale-110' : ''}`}>{i < revealedCount ? symbol : '🎴'}</span>
+            <span className={`text-5xl transition-all duration-500 ${revealedCount > i ? 'scale-125' : 'scale-100'}`}>{revealedCount > i ? symbol : '🎴'}</span>
           </div>
         ))}
       </div>
@@ -363,9 +367,9 @@ export default function PlayPage() {
                     <p className="text-white/40 text-xs">📧 Enviamos tu código al email</p>
                   </>
                 ) : (
-                  <div>
+                  <div className="text-center">
                     <p className="text-white font-black text-2xl">¡Gracias por participar!</p>
-                    <p className="text-white/50 text-sm mt-1">Seguí participando para ganar un premio.</p>
+                    <p className="text-white/50 text-sm mt-2">¡Seguí participando para ganar!</p>
                   </div>
                 )}
                 {campaign.closedRedirectUrl && <a href={campaign.closedRedirectUrl} className="w-full py-4 rounded-2xl font-bold text-white text-center block" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>Ir al sitio →</a>}

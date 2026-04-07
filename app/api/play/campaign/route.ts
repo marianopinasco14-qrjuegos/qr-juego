@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
       language: true, attemptsPerSession: true, formFields: true,
       upsellEnabled: true, upsellTitle: true, upsellPrice: true,
       upsellCurrency: true, upsellLink: true, upsellImageUrl: true,
+      logoUrl: true, participationLimit: true,
       startDate: true, endDate: true, prizes: { select: { title: true, stock: true, validDays: true, deliveredCount: true, prizeImage: true } }, closedRedirectUrl: true,
     }
   });
