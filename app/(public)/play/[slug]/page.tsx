@@ -10,7 +10,7 @@ type Campaign = {
   attemptsPerSession: number; formFields: any[]; upsellEnabled: boolean;
   upsellTitle?: string; upsellPrice?: number; upsellCurrency?: string;
   upsellLink?: string; upsellImage?: string; upsellImageUrl?: string;
-  endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string; logoUrl?: string;
+  endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string; logoUrl?: string; consolePrize?: { id: string } | null;
 };
 type PrizeResult = {
   isWinner: boolean; prizeTitle?: string; redemptionCode?: string;
@@ -50,7 +50,7 @@ function UpsellBar({ campaign }: { campaign: Campaign }) {
   );
 }
 
-function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string }) {
+function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol, hasConsolePrize }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string; hasConsolePrize: boolean }) {
   const SYMBOLS = ['🍒','🌟','💎','🎯','🍀'];
   const [attempt, setAttempt] = useState(0);
   const [currentCard, setCurrentCard] = useState(() => Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
@@ -97,7 +97,7 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
         <div className={"text-center p-4 rounded-2xl " + (isMatch ? "bg-green-500/20 border border-green-500/30" : "bg-white/5 border border-white/10")}>
           {isMatch
             ? <p className="text-green-400 font-bold text-lg">🎉 ¡Ganaste! Los 3 símbolos coinciden</p>
-            : <p className="text-white/60 text-sm">{attempt < attemptsPerSession - 1 ? '¡No coinciden! Tenés otro intento' : 'No coinciden, pero tenés un regalo'}</p>
+            : <p className="text-white/60 text-sm">{attempt < attemptsPerSession - 1 ? '¡No coinciden! Tenés otro intento' : hasConsolePrize ? 'No coinciden, pero tenes un regalo' : '❤️ Mejor suerte la proxima ❤️'}</p>
           }
         </div>
       )}
@@ -112,7 +112,7 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
           <button onClick={handleNext}
             className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
             style={{background: isMatch ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-            {isMatch || attempt >= attemptsPerSession - 1 ? '🎁 Ver mi premio' : '🎰 Siguiente intento'}
+            {isMatch ? '🎁 Ver mi premio' : '🎰 Siguiente intento'}
           </button>
         )}
         <p className="text-white/30 text-xs text-center">Intento {attempt + 1} de {attemptsPerSession}</p>
@@ -312,7 +312,7 @@ export default function PlayPage() {
             {campaign.gameType==="SLOTS" ? (
               <SlotsGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onComplete={handleScratchComplete}/>
             ) : (
-              <ScratchCard primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} attemptsPerSession={campaign.attemptsPerSession} onComplete={handleScratchComplete} winnerSymbol="🍀"/>
+              <ScratchCard primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} attemptsPerSession={campaign.attemptsPerSession} onComplete={handleScratchComplete} winnerSymbol="🍀" hasConsolePrize={!!campaign.consolePrize}/>
             )}
             <UpsellBar campaign={campaign}/>
           </div>
@@ -348,11 +348,11 @@ export default function PlayPage() {
               </>
             ) : (
               <>
-                <div className="text-7xl">🎟️</div>
+                <div className="text-7xl">🙌</div>
                 {prizeResult.consolePrizeTitle ? (
                   <>
                     <div>
-                      <p className="text-white font-black text-2xl">¡Gracias por participar!</p>
+                      <p className="text-white font-black text-2xl">Esta vez no fue...</p>
                       <p className="text-white/50 text-sm mt-1">Tenés un regalo especial para vos</p>
                     </div>
                     <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 space-y-3">
@@ -368,8 +368,8 @@ export default function PlayPage() {
                   </>
                 ) : (
                   <div className="text-center">
-                    <p className="text-white font-black text-2xl">¡Gracias por participar!</p>
-                    <p className="text-white/50 text-sm mt-2">¡Seguí participando para ganar!</p>
+                    <p className="text-white font-black text-2xl">Esta vez no fue...</p>
+                    <p className="text-white/50 text-sm mt-2">Cada intento es una nueva oportunidad. ¡Volvé pronto!</p>
                   </div>
                 )}
                 {campaign.closedRedirectUrl && <a href={campaign.closedRedirectUrl} className="w-full py-4 rounded-2xl font-bold text-white text-center block" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>Ir al sitio →</a>}
