@@ -200,7 +200,7 @@ export default function PlayPage() {
   const [step, setStep] = useState<"form"|"game"|"result">("form");
   const [leadId, setLeadId] = useState("");
   const [prizeResult, setPrizeResult] = useState<PrizeResult | null>(null);
-  const [form, setForm] = useState({email:"", whatsapp:"", extra:{} as Record<string,string>});
+  const [form, setForm] = useState({email:"", whatsapp:"", countryCode:"+54", extra:{} as Record<string,string>});
   const [formError, setFormError] = useState("");
   const [registering, setRegistering] = useState(false);
 
@@ -212,7 +212,7 @@ export default function PlayPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault(); setFormError(""); setRegistering(true);
     try {
-      const res = await fetch("/api/play/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,email:form.email,whatsapp:form.whatsapp,extraFields:form.extra})});
+      const res = await fetch("/api/play/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,email:form.email,whatsapp:form.countryCode+form.whatsapp,extraFields:form.extra})});
       const data = await res.json();
       if (!res.ok) { setFormError(data.error||"Error al registrarse"); setRegistering(false); return; }
       setLeadId(data.leadId); setStep("game");
@@ -262,17 +262,32 @@ export default function PlayPage() {
 
         {step==="form" && (
           <div className="space-y-5">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
-              <p className="text-white/80 text-sm leading-relaxed">
-                🎯 <strong className="text-white">¿Cómo participar?</strong><br/>
-                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos":"descubrí las casillas"} y descubrí si ganaste. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
+            <div className="rounded-2xl p-5 mb-2 text-center" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}22, ${campaign.secondaryColor}22)`, border:`1px solid ${campaign.primaryColor}40`}}>
+              <p className="text-white font-black text-lg mb-1">🎯 ¿Cómo participar?</p>
+              <p className="text-white/70 text-sm leading-relaxed">
+                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":"descubrí las casillas y ganá"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
               </p>
             </div>
             <form onSubmit={handleRegister} className="space-y-3">
               <input required type="email" placeholder="Tu email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
                 style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",width:"100%",outline:"none"}}/>
-              <input required type="tel" placeholder="WhatsApp (ej: 1123456789)" value={form.whatsapp} onChange={e=>setForm(p=>({...p,whatsapp:e.target.value}))}
-                style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",width:"100%",outline:"none"}}/>
+              <div style={{display:"flex",gap:"0.5rem"}}>
+                <select value={form.countryCode} onChange={e=>setForm(p=>({...p,countryCode:e.target.value}))} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",outline:"none",flexShrink:0}}>
+                  <option value="+54">🇦🇷 +54</option>
+                  <option value="+55">🇧🇷 +55</option>
+                  <option value="+56">🇨🇱 +56</option>
+                  <option value="+57">🇨🇴 +57</option>
+                  <option value="+52">🇲🇽 +52</option>
+                  <option value="+51">🇵🇪 +51</option>
+                  <option value="+598">🇺🇾 +598</option>
+                  <option value="+595">🇵🇾 +595</option>
+                  <option value="+591">🇧🇴 +591</option>
+                  <option value="+593">🇪🇨 +593</option>
+                  <option value="+34">🇪🇸 +34</option>
+                  <option value="+1">🇺🇸 +1</option>
+                </select>
+                <input required type="tel" placeholder="Número WhatsApp" value={form.whatsapp} onChange={e=>setForm(p=>({...p,whatsapp:e.target.value}))} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",outline:"none",flex:1}}/>
+              </div>
               {campaign.formFields?.map((field:any)=>(
                 <input key={field.id} type={field.type||"text"} required={field.required} placeholder={field.label} value={form.extra[field.id]||""}
                   onChange={e=>setForm(p=>({...p,extra:{...p.extra,[field.id]:e.target.value}}))}
