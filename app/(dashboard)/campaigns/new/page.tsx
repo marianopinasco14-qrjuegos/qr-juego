@@ -7,21 +7,23 @@ export default function NewCampaignPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState({ name:"", gameType:"RASCA_Y_GANA", attemptsPerSession:3, participationLimit:"once_email", logoUrl:"", primaryColor:"#7C3AED", secondaryColor:"#A78BFA", backgroundColor:"#1a1a2e", language:"es", ageGate:false, prizes:[{title:"",stock:10,priority:5,frequency:50,validDays:30}], consolePrize:{title:"",couponCode:""}, startDate:"", endDate:"", emailWinner:{subject:"🎉 ¡Ganaste un premio!",bodyHtml:"Felicitaciones {{name}}! Ganaste: {{prize}}. Tu código es: {{redemptionCode}}. Válido hasta: {{expiresAt}}"}, emailConsole:{subject:"Tu regalo te espera 🎁",bodyHtml:"Gracias por participar! Tu código de descuento es: {{couponCode}}"}, upsellEnabled:false, upsellTitle:"", upsellPrice:0, upsellCurrency:"ARS", upsellLink:"", upsellImageUrl:"", closedBehavior:"LEAD_MAGNET" });
   const upd=(d:any)=>setForm(p=>({...p,...d}));
   const canGo=()=>{if(step===1)return form.name.trim().length>=3;if(step===3)return form.prizes.some(p=>p.title.trim());return true;};
   async function submit() {
     setSaving(true);
     try {
-      const r=await fetch("/api/campaigns",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,startDate:form.startDate||null,endDate:form.endDate||null,upsellTitle:form.upsellTitle||null,upsellPrice:form.upsellPrice||null,upsellLink:form.upsellLink||null,formFields:[{id:"nombre",label:"Nombre",type:"text",required:true}],closedRedirectUrl:null})});
-      if(!r.ok)throw new Error();
+      setSaveError("");
+      const r=await fetch("/api/campaigns",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,startDate:form.startDate||null,endDate:form.endDate||null,upsellTitle:form.upsellTitle||null,upsellPrice:form.upsellPrice||null,upsellLink:form.upsellLink||null,formFields:[{id:"nombre",label:"Nombre y apellido",type:"text",required:true}],closedRedirectUrl:null})});
+      if(!r.ok){const err=await r.json();setSaveError(err.error||"Error al crear la campaña");setSaving(false);return;}
       const c=await r.json();
       for(const p of form.prizes.filter(p=>p.title.trim()))await fetch(`/api/campaigns/${c.id}/prizes`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
       if(form.consolePrize.title)await fetch(`/api/campaigns/${c.id}/console-prize`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form.consolePrize)});
       await fetch(`/api/campaigns/${c.id}/email-templates`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify([{type:"WINNER",...form.emailWinner},{type:"CONSOLE",...form.emailConsole}])});
       await fetch(`/api/campaigns/${c.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"ACTIVE"})});
       router.push("/dashboard");
-    } catch(e){console.error(e);setSaving(false);}
+    } catch(e){console.error(e);setSaveError("Error de conexión. Intentá de nuevo.");setSaving(false);}
   }
   return (
     <div className="max-w-2xl mx-auto">
@@ -100,6 +102,7 @@ export default function NewCampaignPage() {
       </div>
       <div className="flex justify-between mt-6">
         <button onClick={()=>setStep(p=>p-1)} disabled={step===1} className="px-5 py-3 rounded-xl text-white/60 hover:text-white bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-colors">← Anterior</button>
+        {saveError && <div className="flex items-center gap-2 bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3"><span>⚠️</span><p className="text-red-400 text-sm">{saveError}</p></div>}
         {step<5?<button onClick={()=>setStep(p=>p+1)} disabled={!canGo()} className="px-5 py-3 rounded-xl text-white font-medium bg-violet-600 hover:bg-violet-500 disabled:opacity-30 transition-colors">Siguiente →</button>:<button onClick={submit} disabled={saving} className="px-6 py-3 rounded-xl text-white font-bold bg-green-600 hover:bg-green-500 disabled:opacity-50 transition-colors">{saving?"Creando...":"✅ Crear y Activar"}</button>}
       </div>
     </div>

@@ -36,7 +36,7 @@ export default function CampaignsPage() {
           {campaigns.map((c: any) => (
             <div key={c.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-violet-600/20">{c.gameType==="RULETA"?"🎡":c.gameType==="SLOTS"?"🎰":"🎫"}</div>
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-2xl bg-violet-600/20">{c.gameType==="SLOTS"?"🎰":"🎫"}</div>
                 <div className="min-w-0">
                   <p className="text-white font-medium truncate">{c.name}</p>
                   <div className="flex items-center gap-2 mt-1">
