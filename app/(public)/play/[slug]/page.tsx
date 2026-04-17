@@ -83,7 +83,7 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
       <div className="text-center bg-white/10 border border-white/20 rounded-2xl p-4 mb-2">
         <p className="text-white font-black text-xl">🍀🍀🍀</p>
         <p className="text-white font-bold text-base mt-1">¡3 tréboles = GANASTE!</p>
-        <p className="text-white/50 text-xs mt-1">Descubrí las casillas y descubrí tu suerte</p>
+        <p className="text-white/50 text-xs mt-1">Destapá las 3 casillas y descubrí si ganaste</p>
       </div>
       <div className="flex gap-3 justify-center">
         {currentCard.map((symbol, i) => (
@@ -97,7 +97,7 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
         <div className={"text-center p-4 rounded-2xl " + (isMatch ? "bg-green-500/20 border border-green-500/30" : "bg-white/5 border border-white/10")}>
           {isMatch
             ? <p className="text-green-400 font-bold text-lg">🎉 ¡Ganaste! Los 3 símbolos coinciden</p>
-            : <p className="text-white/60 text-sm">{attempt < attemptsPerSession - 1 ? '¡No coinciden! Tenés otro intento' : hasConsolePrize ? 'No coinciden, pero tenes un regalo' : '❤️ Mejor suerte la proxima ❤️'}</p>
+            : <p className="text-white/60 text-sm">{attempt < attemptsPerSession - 1 ? 'No coinciden — ¡te queda otro intento!' : hasConsolePrize ? '¡No te vayas sin tu regalo! 🎁' : '❤️ ¡Mejor suerte la próxima!'}</p>
           }
         </div>
       )}
@@ -106,13 +106,13 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
           <button onClick={handleReveal} disabled={revealing}
             className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-60"
             style={{background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-            ✨ ¡Descubrir!
+            ✨ ¡Destapar!
           </button>
         ) : (
           <button onClick={handleNext}
             className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
             style={{background: isMatch ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-            {isMatch ? '🎁 Ver mi premio' : '🎰 Siguiente intento'}
+            {isMatch ? '🎁 Ver mi premio' : attempt >= attemptsPerSession - 1 ? hasConsolePrize ? '🎁 Ver mi regalo' : '➡️ Finalizar' : '🎴 Siguiente tarjeta'}
           </button>
         )}
         <p className="text-white/30 text-xs text-center">Intento {attempt + 1} de {attemptsPerSession}</p>
@@ -265,7 +265,7 @@ export default function PlayPage() {
             <div className="rounded-2xl p-5 mb-2 text-center" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}22, ${campaign.secondaryColor}22)`, border:`1px solid ${campaign.primaryColor}40`}}>
               <p className="text-white font-black text-lg mb-1">🎯 ¿Cómo participar?</p>
               <p className="text-white/70 text-sm leading-relaxed">
-                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":"descubrí las casillas y ganá"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
+                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":"destapá las casillas y descubrí si ganaste"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
               </p>
             </div>
             <form onSubmit={handleRegister} className="space-y-3">
