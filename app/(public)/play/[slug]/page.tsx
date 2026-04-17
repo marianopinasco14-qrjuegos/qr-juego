@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
+import confetti from "canvas-confetti";
 
 type Prize = { title: string; stock: number; validDays: number; deliveredCount: number; prizeImage?: string };
 type Campaign = {
@@ -51,19 +52,31 @@ function UpsellBar({ campaign }: { campaign: Campaign }) {
 }
 
 function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol, hasConsolePrize }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string; hasConsolePrize: boolean }) {
-  const SYMBOLS = ['🍒','🌟','💎','🎯','🍀'];
+  const SYMBOLS = ['🍒','🌟','💎','🎯','🍀','🔔','🍋'];
   const [attempt, setAttempt] = useState(0);
   const [currentCard, setCurrentCard] = useState(() => Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
   const [revealedCount, setRevealedCount] = useState(0);
   const [revealing, setRevealing] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [glowing, setGlowing] = useState(false);
   const isMatch = currentCard[0] === currentCard[1] && currentCard[1] === currentCard[2];
 
   const handleReveal = () => {
     setRevealing(true);
-    setRevealedCount(1);
-    setTimeout(() => setRevealedCount(2), 1000);
-    setTimeout(() => { setRevealedCount(3); setShowResult(true); setRevealing(false); }, 2000);
+    setTimeout(() => setRevealedCount(1), 400);
+    setTimeout(() => setRevealedCount(2), 1400);
+    setTimeout(() => {
+      setRevealedCount(3);
+      setRevealing(false);
+      setTimeout(() => {
+        setShowResult(true);
+        if (currentCard[0] === currentCard[1] && currentCard[1] === currentCard[2]) {
+          setGlowing(true);
+          confetti({ particleCount: 180, spread: 90, origin: { y: 0.5 }, colors: [primaryColor, secondaryColor, '#ffffff', '#ffd700'] });
+          setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.4 }, colors: [primaryColor, secondaryColor, '#ffffff'] }), 400);
+        }
+      }, 300);
+    }, 2600);
   };
 
   const handleNext = async () => {
@@ -75,42 +88,59 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
       setRevealedCount(0);
       setRevealing(false);
       setShowResult(false);
+      setGlowing(false);
     }
   };
 
   return (
     <div className="w-full space-y-6">
-      <div className="text-center bg-white/10 border border-white/20 rounded-2xl p-4 mb-2">
-        <p className="text-white font-black text-xl">🍀🍀🍀</p>
-        <p className="text-white font-bold text-base mt-1">¡3 tréboles = GANASTE!</p>
+      <div className="text-center rounded-2xl p-4 mb-2" style={{background:`linear-gradient(135deg, ${primaryColor}22, ${primaryColor}11)`, border:`1px solid ${primaryColor}40`}}>
+        <p className="text-white font-black text-2xl mb-1">🍀 🍀 🍀</p>
+        <p className="text-white font-black text-base">¡3 iguales = GANASTE!</p>
         <p className="text-white/50 text-xs mt-1">Destapá las 3 casillas y descubrí si ganaste</p>
       </div>
-      <div className="flex gap-3 justify-center">
+      <div className="flex gap-4 justify-center">
         {currentCard.map((symbol, i) => (
-          <div key={i} className="w-24 h-24 rounded-2xl border-2 flex items-center justify-center"
-            style={{borderColor: primaryColor + '60', background: i < revealedCount ? primaryColor + '20' : 'rgba(255,255,255,0.05)'}}>
-            <span className={`text-5xl transition-all duration-500 ${revealedCount > i ? 'scale-125' : 'scale-100'}`}>{revealedCount > i ? symbol : '🎴'}</span>
+          <div key={i}
+            className="w-28 h-28 rounded-2xl border-2 flex items-center justify-center transition-all duration-500"
+            style={{
+              borderColor: revealedCount > i ? (glowing ? '#ffd700' : primaryColor) : 'rgba(255,255,255,0.15)',
+              background: revealedCount > i ? `linear-gradient(135deg, ${primaryColor}30, ${primaryColor}10)` : 'rgba(255,255,255,0.04)',
+              boxShadow: revealedCount > i && glowing ? `0 0 25px ${primaryColor}80, 0 0 50px ${primaryColor}40` : revealedCount > i ? `0 0 15px ${primaryColor}40` : 'none',
+              transform: revealedCount > i ? 'scale(1.05)' : 'scale(1)',
+            }}>
+            <span className={`text-6xl transition-all duration-500 ${revealedCount > i ? 'opacity-100 scale-110' : 'opacity-0 scale-50'}`}>
+              {revealedCount > i ? symbol : ''}
+            </span>
+            {revealedCount <= i && (
+              <span className="text-5xl opacity-30">🎴</span>
+            )}
           </div>
         ))}
       </div>
+      {revealing && revealedCount < 3 && (
+        <div className="text-center">
+          <p className="text-white/50 text-sm animate-pulse">{'• '.repeat(revealedCount + 1).trim()}</p>
+        </div>
+      )}
       {showResult && (
-        <div className={"text-center p-4 rounded-2xl " + (isMatch ? "bg-green-500/20 border border-green-500/30" : attempt < attemptsPerSession - 1 ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/20")}>
+        <div className={"text-center p-5 rounded-2xl " + (isMatch ? "bg-green-500/20 border-2 border-green-400/50" : attempt < attemptsPerSession - 1 ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/20")}>
           {isMatch
-            ? <><p className="text-green-400 font-black text-xl">🎉 ¡GANASTE!</p><p className="text-green-300/70 text-sm mt-1">Los 3 símbolos coinciden</p></>
+            ? <><p className="text-green-400 font-black text-2xl">🎉 ¡GANASTE!</p><p className="text-green-300/70 text-sm mt-1">¡Los 3 símbolos coinciden!</p></>
             : attempt < attemptsPerSession - 1
-              ? <><p className="text-yellow-400 font-bold text-base">😅 No coinciden</p><p className="text-white/50 text-xs mt-1">¡Te queda otro intento!</p></>
+              ? <><p className="text-yellow-400 font-bold text-lg">😅 No coinciden</p><p className="text-white/50 text-xs mt-1">¡Te queda otro intento!</p></>
               : hasConsolePrize
-                ? <><p className="text-white font-bold text-base">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">Pero no te vayas — ¡tenés un regalo esperándote!</p></>
-                : <><p className="text-white font-bold text-base">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">¡Mejor suerte la próxima!</p></>
+                ? <><p className="text-white font-bold text-lg">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">Pero no te vayas — ¡tenés un regalo esperándote!</p></>
+                : <><p className="text-white font-bold text-lg">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">¡Mejor suerte la próxima!</p></>
           }
         </div>
       )}
       <div className="flex flex-col gap-3">
         {revealedCount < 3 ? (
           <button onClick={handleReveal} disabled={revealing}
-            className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-60"
-            style={{background: `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-            ✨ ¡Destapar!
+            className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-40"
+            style={{background: revealing ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
+            {revealing ? <span className="animate-pulse">✨ Destapando...</span> : '✨ ¡Destapar!'}
           </button>
         ) : (
           <button onClick={handleNext}
@@ -159,7 +189,13 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
     setTimeout(() => { clearInterval(interval1.current); cur[1]=finalReelsRef.current[1]; setReels([...cur]); setStopped([true,true,false]); }, 4500);
     setTimeout(() => {
       clearInterval(interval2.current); cur[2]=finalReelsRef.current[2]; setReels([...cur]); setStopped([true,true,true]);
-      setTimeout(() => { setSpinning(false); setDone(true); setWon(isWin); setShowResult(true); }, 400);
+      setTimeout(() => {
+        setSpinning(false); setDone(true); setWon(isWin); setShowResult(true);
+        if (isWin) {
+          setTimeout(() => confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors: [primaryColor, secondaryColor, '#ffffff', '#ffd700'] }), 200);
+          setTimeout(() => confetti({ particleCount: 100, spread: 70, origin: { y: 0.3 }, colors: [primaryColor, '#ffd700', '#ffffff'] }), 700);
+        }
+      }, 400);
     }, 6500);
   };
 
