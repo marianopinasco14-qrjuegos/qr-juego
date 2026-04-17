@@ -94,10 +94,14 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
         ))}
       </div>
       {showResult && (
-        <div className={"text-center p-4 rounded-2xl " + (isMatch ? "bg-green-500/20 border border-green-500/30" : "bg-white/5 border border-white/10")}>
+        <div className={"text-center p-4 rounded-2xl " + (isMatch ? "bg-green-500/20 border border-green-500/30" : attempt < attemptsPerSession - 1 ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/20")}>
           {isMatch
-            ? <p className="text-green-400 font-bold text-lg">🎉 ¡Ganaste! Los 3 símbolos coinciden</p>
-            : <p className="text-white/60 text-sm">{attempt < attemptsPerSession - 1 ? 'No coinciden — ¡te queda otro intento!' : hasConsolePrize ? '¡No te vayas sin tu regalo! 🎁' : '❤️ ¡Mejor suerte la próxima!'}</p>
+            ? <><p className="text-green-400 font-black text-xl">🎉 ¡GANASTE!</p><p className="text-green-300/70 text-sm mt-1">Los 3 símbolos coinciden</p></>
+            : attempt < attemptsPerSession - 1
+              ? <><p className="text-yellow-400 font-bold text-base">😅 No coinciden</p><p className="text-white/50 text-xs mt-1">¡Te queda otro intento!</p></>
+              : hasConsolePrize
+                ? <><p className="text-white font-bold text-base">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">Pero no te vayas — ¡tenés un regalo esperándote!</p></>
+                : <><p className="text-white font-bold text-base">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">¡Mejor suerte la próxima!</p></>
           }
         </div>
       )}
