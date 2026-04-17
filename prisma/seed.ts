@@ -148,13 +148,13 @@ async function main() {
   console.log("Cupones de demo creados");
 
   // Campañas demo
-  const slugRuleta = "demo-ruleta-2024";
-  if (!(await prisma.campaign.findUnique({ where: { qrSlug: slugRuleta } }))) {
+  const slugRasca2 = "demo-rasca-restaurante-2024";
+  if (!(await prisma.campaign.findUnique({ where: { qrSlug: slugRasca2 } }))) {
     const c = await prisma.campaign.create({
       data: {
         organizationId: org.id,
-        name: "Demo: Ruleta del Restaurante",
-        gameType: "RULETA",
+        name: "Demo: Rasca y Gana Restaurante",
+        gameType: "RASCA_Y_GANA",
         attemptsPerSession: 3,
         status: "ACTIVE",
         primaryColor: "#7C3AED",
@@ -168,7 +168,7 @@ async function main() {
         upsellCurrency: "ARS",
         upsellLink: "https://wa.me/5491100000000",
         closedBehavior: "LEAD_MAGNET",
-        qrSlug: slugRuleta,
+        qrSlug: slugRasca2,
         startDate: new Date(),
         endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       },
@@ -187,7 +187,7 @@ async function main() {
         { campaignId: c.id, type: "CONSOLE", subject: "Tu regalo te espera", bodyHtml: "<h1>¡Gracias por participar!</h1><p>Tu código: {{couponCode}}</p>" },
       ],
     });
-    console.log("Campaña Ruleta creada:", slugRuleta);
+    console.log("Campaña Rasca Restaurante creada:", slugRasca2);
   }
 
   const slugSlots = "demo-slots-2024";
