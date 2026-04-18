@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       upsellCurrency: true, upsellLink: true, upsellImageUrl: true,
       logoUrl: true, participationLimit: true,
       startDate: true, endDate: true, prizes: { select: { title: true, stock: true, validDays: true, deliveredCount: true, prizeImage: true } }, closedRedirectUrl: true, consolePrize: { select: { id: true } },
+      organization: { select: { metaPixelId: true, googleAnalyticsId: true, tiktokPixelId: true } },
     }
   });
   if (!campaign || campaign.status !== "ACTIVE") {
@@ -22,5 +23,12 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   if (campaign.startDate && campaign.startDate > now) return NextResponse.json({ error: "La campana aun no comenzo" }, { status: 403 });
   if (campaign.endDate && campaign.endDate < now) return NextResponse.json({ error: "La campana ya finalizo" }, { status: 403 });
-  return NextResponse.json({ ...campaign, formFields: typeof campaign.formFields === "string" ? JSON.parse(campaign.formFields) : campaign.formFields });
+  const { organization, ...rest } = campaign as any;
+  return NextResponse.json({
+    ...rest,
+    formFields: typeof rest.formFields === "string" ? JSON.parse(rest.formFields) : rest.formFields,
+    metaPixelId: organization?.metaPixelId ?? null,
+    googleAnalyticsId: organization?.googleAnalyticsId ?? null,
+    tiktokPixelId: organization?.tiktokPixelId ?? null,
+  });
 }

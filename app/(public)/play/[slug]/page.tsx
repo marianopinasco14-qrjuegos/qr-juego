@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import confetti from "canvas-confetti";
+import TrackingPixels, { trackLead, trackWin } from "@/components/TrackingPixels";
 
 type Prize = { title: string; stock: number; validDays: number; deliveredCount: number; prizeImage?: string };
 type Campaign = {
@@ -12,6 +13,7 @@ type Campaign = {
   upsellTitle?: string; upsellPrice?: number; upsellCurrency?: string;
   upsellLink?: string; upsellImage?: string; upsellImageUrl?: string;
   endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string; logoUrl?: string; consolePrize?: { id: string } | null;
+  metaPixelId?: string | null; googleAnalyticsId?: string | null; tiktokPixelId?: string | null;
 };
 type PrizeResult = {
   isWinner: boolean; prizeTitle?: string; redemptionCode?: string;
@@ -255,7 +257,7 @@ export default function PlayPage() {
       const res = await fetch("/api/play/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,email:form.email,whatsapp:form.countryCode+form.whatsapp,extraFields:form.extra})});
       const data = await res.json();
       if (!res.ok) { setFormError(data.error||"Error al registrarse"); setRegistering(false); return; }
-      setLeadId(data.leadId); setStep("game");
+      setLeadId(data.leadId); trackLead(); setStep("game");
     } catch { setFormError("Error de conexión"); }
     setRegistering(false);
   }
@@ -263,7 +265,7 @@ export default function PlayPage() {
   async function handleScratchComplete(playerWon: boolean) {
     const res = await fetch("/api/play/scratch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,leadId,playerWon})});
     const data = await res.json();
-    if (data.prizeResult) { setPrizeResult(data.prizeResult); setStep("result"); }
+    if (data.prizeResult) { if (data.prizeResult.isWinner) trackWin(); setPrizeResult(data.prizeResult); setStep("result"); }
   }
 
   if (loading) return (
@@ -283,6 +285,7 @@ export default function PlayPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{backgroundColor:campaign.backgroundColor}}>
+      <TrackingPixels metaPixelId={campaign.metaPixelId} googleAnalyticsId={campaign.googleAnalyticsId} tiktokPixelId={campaign.tiktokPixelId} />
       <div className="flex-1 max-w-md mx-auto w-full px-5 pt-8 pb-10">
 
         <div className="text-center mb-6">

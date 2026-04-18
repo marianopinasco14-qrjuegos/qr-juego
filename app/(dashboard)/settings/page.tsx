@@ -38,6 +38,11 @@ export default async function SettingsPage() {
         webhooks={webhooks}
         allPlans={allPlans}
         currentSubscription={currentSubscription}
+        pixels={{
+          metaPixelId: org.metaPixelId ?? null,
+          googleAnalyticsId: org.googleAnalyticsId ?? null,
+          tiktokPixelId: org.tiktokPixelId ?? null,
+        }}
       />
     </div>
   );

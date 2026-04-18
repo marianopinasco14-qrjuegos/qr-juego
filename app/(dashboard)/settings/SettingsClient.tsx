@@ -29,17 +29,24 @@ interface Webhook {
   successCount: number; failureCount: number;
 }
 
+interface Pixels {
+  metaPixelId: string | null;
+  googleAnalyticsId: string | null;
+  tiktokPixelId: string | null;
+}
+
 interface Props {
   org: Org;
   plan: Plan;
   webhooks: Webhook[];
   allPlans: Plan[];
   currentSubscription: Subscription | null;
+  pixels: Pixels;
 }
 
-export default function SettingsClient({ org, plan, webhooks, allPlans, currentSubscription }: Props) {
+export default function SettingsClient({ org, plan, webhooks, allPlans, currentSubscription, pixels }: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<"account" | "whitelabel" | "webhooks" | "plan">("account");
+  const [tab, setTab] = useState<"account" | "pixels" | "whitelabel" | "webhooks" | "plan">("account");
 
   return (
     <div>
@@ -47,6 +54,7 @@ export default function SettingsClient({ org, plan, webhooks, allPlans, currentS
       <div className="flex gap-1 mb-6 bg-white/5 p-1 rounded-xl w-fit">
         {([
           { id: "account", label: "Cuenta" },
+          { id: "pixels", label: "Píxeles" },
           { id: "plan", label: "Plan" },
           ...(plan.whiteLabelEnabled ? [{ id: "whitelabel", label: "White Label" }] : []),
           ...(plan.webhooksEnabled ? [{ id: "webhooks", label: "Webhooks" }] : []),
@@ -64,6 +72,7 @@ export default function SettingsClient({ org, plan, webhooks, allPlans, currentS
       </div>
 
       {tab === "account" && <AccountTab org={org} router={router} />}
+      {tab === "pixels" && <PixelsTab pixels={pixels} />}
       {tab === "plan" && (
         <PlanTab
           org={org}
@@ -513,6 +522,92 @@ function WhiteLabelTab({ org, router }: { org: Org; router: any }) {
         {msg && <p className="text-sm text-green-400">{msg}</p>}
         <button type="submit" disabled={saving} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white px-5 py-2 rounded-lg text-sm font-medium">
           {saving ? "Guardando..." : "Guardar white label"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Pixels Tab ───────────────────────────────────────────────────────────────
+
+function PixelsTab({ pixels }: { pixels: Pixels }) {
+  const [form, setForm] = useState({
+    metaPixelId: pixels.metaPixelId ?? "",
+    googleAnalyticsId: pixels.googleAnalyticsId ?? "",
+    tiktokPixelId: pixels.tiktokPixelId ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setMsg(null);
+    const res = await fetch("/api/settings/pixels", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        metaPixelId: form.metaPixelId || null,
+        googleAnalyticsId: form.googleAnalyticsId || null,
+        tiktokPixelId: form.tiktokPixelId || null,
+      }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setMsg({ text: "Píxeles guardados correctamente.", type: "success" });
+    } else {
+      const err = await res.json().catch(() => ({}));
+      setMsg({ text: err.error ?? "Error al guardar.", type: "error" });
+    }
+  };
+
+  return (
+    <div className="bg-gray-900 border border-white/10 rounded-xl p-6 space-y-5">
+      <div>
+        <h2 className="font-semibold text-lg">Píxeles de seguimiento</h2>
+        <p className="text-sm text-gray-400 mt-1">Configurá tus píxeles para medir conversiones en cada juego QR de tu organización.</p>
+      </div>
+      <form onSubmit={save} className="space-y-4">
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">Meta Pixel ID</label>
+          <input
+            value={form.metaPixelId}
+            onChange={(e) => setForm((f) => ({ ...f, metaPixelId: e.target.value }))}
+            placeholder="Ej: 1234567890123456"
+            className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 font-mono"
+          />
+          <p className="text-xs text-gray-500 mt-1">Encontralo en Meta Business Suite → Píxeles.</p>
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">Google Analytics 4 — Measurement ID</label>
+          <input
+            value={form.googleAnalyticsId}
+            onChange={(e) => setForm((f) => ({ ...f, googleAnalyticsId: e.target.value }))}
+            placeholder="Ej: G-XXXXXXXXXX"
+            className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 font-mono"
+          />
+          <p className="text-xs text-gray-500 mt-1">Debe empezar con <span className="font-mono">G-</span>. Encontralo en GA4 → Administrar → Flujos de datos.</p>
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 block mb-1">TikTok Pixel ID</label>
+          <input
+            value={form.tiktokPixelId}
+            onChange={(e) => setForm((f) => ({ ...f, tiktokPixelId: e.target.value }))}
+            placeholder="Ej: CXXXXXXXXXXXXXXX"
+            className="w-full bg-gray-950 border border-white/20 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-purple-500 font-mono"
+          />
+          <p className="text-xs text-gray-500 mt-1">Encontralo en TikTok Ads Manager → Activos → Eventos.</p>
+        </div>
+        {msg && (
+          <div className={`rounded-lg p-3 text-sm ${
+            msg.type === "success" ? "bg-green-500/10 border border-green-500/30 text-green-300" :
+            "bg-red-500/10 border border-red-500/30 text-red-300"
+          }`}>
+            {msg.text}
+          </div>
+        )}
+        <button type="submit" disabled={saving} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-60 text-white px-5 py-2 rounded-lg text-sm font-medium">
+          {saving ? "Guardando..." : "Guardar píxeles"}
         </button>
       </form>
     </div>

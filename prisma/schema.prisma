@@ -119,6 +119,9 @@ model Organization {
   contactName        String?
   contactWhatsapp    String?
   businessType       String?
+  metaPixelId        String?
+  googleAnalyticsId  String?
+  tiktokPixelId      String?
   // Afiliado que refirió a esta org
   referredByCode     String?
   createdAt          DateTime           @default(now())
