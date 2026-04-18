@@ -5,7 +5,7 @@ export function middleware(req: NextRequest) {
   const token = req.cookies.get("auth-token")?.value;
   const { pathname } = req.nextUrl;
 
-  const dashboardRoutes = ["/dashboard", "/campaigns", "/leads", "/staff-pins", "/settings"];
+  const dashboardRoutes = ["/dashboard", "/campaigns", "/leads", "/staff-pins", "/settings", "/analytics"];
   const adminRoutes = ["/admin"];
 
   const isDashboardRoute = dashboardRoutes.some((r) => pathname.startsWith(r));
