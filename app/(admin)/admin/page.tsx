@@ -166,9 +166,19 @@ export default async function AdminDashboard() {
           <h1 className="text-2xl font-bold">Panel de Negocio</h1>
           <p className="text-gray-400 text-sm mt-1">Métricas en tiempo real de QR Juego</p>
         </div>
-        <div className="text-xs text-gray-600">
-          Actualizado: {now.toLocaleDateString("es-AR")}{" "}
-          {now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+        <div className="flex items-center gap-3">
+          <form action="/api/admin/send-trial-reminders" method="POST">
+            <button
+              type="submit"
+              className="text-xs bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-300 px-3 py-1.5 rounded-lg transition-colors border border-yellow-500/30"
+            >
+              📧 Enviar recordatorios trial
+            </button>
+          </form>
+          <div className="text-xs text-gray-600">
+            Actualizado: {now.toLocaleDateString("es-AR")}{" "}
+            {now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+          </div>
         </div>
       </div>
 

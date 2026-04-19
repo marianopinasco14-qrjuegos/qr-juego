@@ -69,6 +69,11 @@ export default function LoginPage() {
             className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 focus:outline-none focus:border-violet-500"
             placeholder="Contraseña"
           />
+          <div className="text-right -mt-2">
+            <Link href="/forgot-password" className="text-violet-400 hover:underline text-xs">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </div>
           {error && <p className="text-red-400 text-sm bg-red-500/20 rounded-lg px-3 py-2">{error}</p>}
           <button
             type="submit"

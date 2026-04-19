@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { sendWelcomeEmail } from "@/lib/email";
 
 const schema = z.object({
   name: z.string().min(2).max(100),
@@ -147,15 +148,13 @@ export async function POST(req: Request) {
       return { org, user };
     });
 
-    // Log email de bienvenida (envío real se puede agregar con Resend)
-    await prisma.emailLog.create({
-      data: {
-        organizationId: result.org.id,
-        to: data.email,
-        subject: `¡Bienvenido a QR Juego! Tu trial de ${trialDays} días ya está activo`,
-        type: "TRIAL_STARTED",
-        status: "SENT",
-      },
+    // Enviar email de bienvenida real
+    await sendWelcomeEmail({
+      toEmail: data.email,
+      toName: data.name,
+      orgName: data.orgName,
+      trialDays: plan.trialDays,
+      trialEndsAt,
     });
 
     return NextResponse.json({
