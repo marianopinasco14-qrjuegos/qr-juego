@@ -261,6 +261,66 @@ export async function sendAffiliateCommissionPaidEmail(params: { toEmail: string
   } catch (e) { console.error("sendAffiliateCommissionPaidEmail error:", e); }
 }
 
+export async function sendRaffleWinnerEmail(params: {
+  campaignId: string; toEmail: string; toName: string;
+  prizeName: string; redemptionCode: string; expiresAt: Date;
+  raffleTermsUrl?: string;
+}) {
+  try {
+    const template = await prisma.emailTemplate.findUnique({ where: { campaignId_type: { campaignId: params.campaignId, type: "RAFFLE_WINNER" } } });
+
+    const redeemUrl = `${process.env.NEXT_PUBLIC_APP_URL}/staff/redeem/${params.redemptionCode}`;
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(redeemUrl)}`;
+    const fechaVence = params.expiresAt.toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" });
+
+    let bodyText: string;
+    let subject: string;
+
+    if (template) {
+      subject = template.subject;
+      bodyText = template.bodyHtml
+        .replace(/{{name}}/g, params.toName)
+        .replace(/{{prize}}/g, params.prizeName)
+        .replace(/{{redemptionCode}}/g, params.redemptionCode)
+        .replace(/{{expiresAt}}/g, fechaVence);
+    } else {
+      subject = `🎲 ¡Ganaste en el sorteo! — ${params.prizeName}`;
+      bodyText = `¡Felicitaciones ${params.toName}! Ganaste: ${params.prizeName}. Tu código de canje es: ${params.redemptionCode}. Tenés hasta el ${fechaVence} para reclamarlo.`;
+    }
+
+    const termsBlock = params.raffleTermsUrl
+      ? `<div style="text-align:center;margin:10px 0;"><a href="${params.raffleTermsUrl}" style="color:#7C3AED;font-size:12px;">Ver términos y condiciones</a></div>`
+      : "";
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px;">
+  <div style="max-width: 500px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden;">
+    <div style="background: linear-gradient(135deg, #7C3AED, #A78BFA); padding: 30px; text-align: center;">
+      <h1 style="color: white; margin: 0; font-size: 28px;">🎲 ¡Ganaste en el sorteo!</h1>
+    </div>
+    <div style="padding: 30px;">
+      <p style="color: #333; font-size: 16px;">${bodyText}</p>
+      <div style="background: #f9f9f9; border-radius: 12px; padding: 20px; text-align: center; margin: 20px 0;">
+        <p style="color: #666; font-size: 14px; margin: 0 0 10px;">Tu código de canje</p>
+        <p style="font-family: monospace; font-size: 22px; font-weight: bold; color: #7C3AED; letter-spacing: 3px;">${params.redemptionCode}</p>
+        <p style="color: #999; font-size: 12px;">Válido hasta: ${fechaVence}</p>
+      </div>
+      <div style="text-align: center; margin: 20px 0;">
+        <p style="color: #666; font-size: 14px;">Mostrá este QR al empleado para canjear tu premio</p>
+        <img src="${qrImageUrl}" alt="QR de canje" style="width: 200px; height: 200px; border-radius: 12px;"/>
+      </div>
+      ${termsBlock}
+    </div>
+  </div>
+</body>
+</html>`;
+
+    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject, html });
+  } catch (e) { console.error("Email ganador sorteo error (no critico):", e); }
+}
+
 export async function sendPasswordResetEmail(params: { toEmail: string; toName: string; resetToken: string }) {
   try {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";

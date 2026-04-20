@@ -6,6 +6,239 @@ import Link from "next/link";
 const GAMES=[{id:"RASCA_Y_GANA",label:"Rasca y Gana",emoji:"🎫",desc:"Tarjeta táctil"},{id:"SLOTS",label:"Tragamonedas",emoji:"🎰",desc:"Tres rodillos"}];
 const STEPS=["Mecánica","Branding","Premios","Email","Upseller"];
 
+function SorteoView({ id, campaignData }: { id: string; campaignData: any }) {
+  const [activeTab, setActiveTab] = useState<"resumen"|"participantes"|"sorteo">("resumen");
+  const [leads, setLeads] = useState<any[]>([]);
+  const [results, setResults] = useState<any[]>([]);
+  const [loadingLeads, setLoadingLeads] = useState(false);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [executing, setExecuting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [executeError, setExecuteError] = useState("");
+  const [campaign, setCampaign] = useState(campaignData);
+  const router = useRouter();
+
+  const drawDate = campaign.raffleDrawDate ? new Date(campaign.raffleDrawDate) : null;
+  const now = new Date();
+  const canExecute = drawDate ? now >= drawDate : false;
+  const isExecuted = !!campaign.raffleExecutedAt;
+
+  useEffect(() => {
+    if (activeTab === "participantes" && leads.length === 0) {
+      setLoadingLeads(true);
+      fetch(`/api/leads/list?campaignId=${id}`).then(r=>r.json()).then(d=>{setLeads(d?.leads||[]);setLoadingLeads(false);}).catch(()=>setLoadingLeads(false));
+    }
+    if (activeTab === "sorteo" && isExecuted && results.length === 0) {
+      setLoadingResults(true);
+      fetch(`/api/campaigns/${id}/raffle-results`).then(r=>r.json()).then(d=>{setResults(d||[]);setLoadingResults(false);}).catch(()=>setLoadingResults(false));
+    }
+  }, [activeTab]);
+
+  async function executeRaffle() {
+    setExecuting(true); setExecuteError("");
+    try {
+      const res = await fetch(`/api/campaigns/${id}/raffle/execute`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) { setExecuteError(data.error || "Error al ejecutar el sorteo"); setExecuting(false); return; }
+      // Recargar datos de campaña
+      const updated = await fetch(`/api/campaigns/${id}`).then(r=>r.json());
+      setCampaign(updated);
+      setShowConfirm(false);
+      setActiveTab("sorteo");
+      setResults([]);
+    } catch { setExecuteError("Error de conexión"); }
+    setExecuting(false);
+  }
+
+  // Countdown hasta drawDate
+  function Countdown() {
+    const [diff, setDiff] = useState(drawDate ? drawDate.getTime() - Date.now() : 0);
+    useEffect(() => {
+      if (!drawDate || diff <= 0) return;
+      const t = setInterval(() => setDiff(drawDate.getTime() - Date.now()), 1000);
+      return () => clearInterval(t);
+    }, []);
+    if (diff <= 0) return <p className="text-green-400 font-bold">¡Ya podés ejecutar el sorteo!</p>;
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return (
+      <div className="flex gap-3 justify-center">
+        {[{v:d,l:"días"},{v:h,l:"horas"},{v:m,l:"min"},{v:s,l:"seg"}].map(({v,l})=>(
+          <div key={l} className="text-center bg-white/5 border border-white/10 rounded-xl px-4 py-3 min-w-16">
+            <p className="text-white font-black text-2xl">{String(v).padStart(2,"0")}</p>
+            <p className="text-white/40 text-xs">{l}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/campaigns" className="text-white/40 hover:text-white transition-colors">← Volver</Link>
+          <h1 className="text-white text-xl font-bold">🎲 {campaign.name}</h1>
+        </div>
+        <span className={`px-3 py-1 rounded-full text-xs font-bold ${campaign.status==="ACTIVE"?"bg-green-500/20 text-green-400":"bg-gray-500/20 text-gray-400"}`}>
+          {campaign.status==="ACTIVE"?"🟢 Aceptando participantes":"🔴 Finalizado"}
+        </span>
+      </div>
+
+      {campaign.raffleLocked && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 text-amber-300 text-sm">
+          🔒 Esta campaña está bloqueada — el sorteo fue ejecutado y no se puede editar.
+        </div>
+      )}
+
+      <div className="flex gap-2 border-b border-white/10 pb-1">
+        {(["resumen","participantes","sorteo"] as const).map(t=>(
+          <button key={t} onClick={()=>setActiveTab(t)}
+            className={`px-4 py-2 rounded-t-xl text-sm font-medium transition-all capitalize ${activeTab===t?"bg-violet-600 text-white":"text-white/50 hover:text-white"}`}>
+            {t==="resumen"?"Resumen":t==="participantes"?"Participantes":"Sorteo"}
+          </button>
+        ))}
+      </div>
+
+      {activeTab==="resumen" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              {l:"Cierre de inscripción",v:campaign.endDate?new Date(campaign.endDate).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"}):"Sin fecha"},
+              {l:"Fecha del sorteo",v:drawDate?drawDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}):"Sin configurar"},
+              {l:"Días para reclamar",v:`${campaign.raffleClaimDays||7} días`},
+              {l:"Ejecutado",v:campaign.raffleExecutedAt?new Date(campaign.raffleExecutedAt).toLocaleDateString("es-AR"):"No ejecutado"},
+            ].map(({l,v})=>(
+              <div key={l} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-white/40 text-xs mb-1">{l}</p>
+                <p className="text-white font-medium text-sm">{v}</p>
+              </div>
+            ))}
+          </div>
+          {campaign.rafflePrizes?.length > 0 && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+              <p className="text-white font-medium">🏆 Premios configurados</p>
+              {campaign.rafflePrizes.map((p:any)=>(
+                <div key={p.id} className="flex items-center justify-between">
+                  <p className="text-white/80 text-sm">{p.title}</p>
+                  <p className="text-white/40 text-xs">{p.stock} ganador{p.stock!==1?"es":""}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {campaign.raffleTermsUrl && (
+            <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-violet-400 text-sm underline">Ver términos y condiciones ↗</a>
+          )}
+        </div>
+      )}
+
+      {activeTab==="participantes" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-white/60 text-sm">{leads.length} participantes registrados</p>
+            <a href={`/api/leads/export?campaignId=${id}`} className="text-violet-400 text-sm hover:text-violet-300 transition-colors">⬇️ Exportar CSV</a>
+          </div>
+          {loadingLeads ? <p className="text-white/40 text-sm py-8 text-center">Cargando...</p> : (
+            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-white/10">{["Nombre","Email","WhatsApp","Registro"].map(h=><th key={h} className="text-white/40 font-medium text-left px-4 py-3">{h}</th>)}</tr></thead>
+                <tbody>
+                  {leads.map((l:any)=>(
+                    <tr key={l.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3 text-white/80">{l.extraFields?.nombre||"—"}</td>
+                      <td className="px-4 py-3 text-white/60 text-xs">{l.email}</td>
+                      <td className="px-4 py-3 text-white/60 text-xs">{l.whatsapp}</td>
+                      <td className="px-4 py-3 text-white/40 text-xs">{new Date(l.createdAt).toLocaleDateString("es-AR")}</td>
+                    </tr>
+                  ))}
+                  {leads.length===0&&<tr><td colSpan={4} className="px-4 py-8 text-center text-white/30">No hay participantes aún</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab==="sorteo" && !isExecuted && (
+        <div className="space-y-6">
+          <div className="text-center space-y-4">
+            <p className="text-white/60 text-sm">Tiempo hasta el sorteo</p>
+            <Countdown/>
+          </div>
+          {!canExecute && drawDate && (
+            <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+              <p className="text-white/50 text-sm">Podrás ejecutar el sorteo a partir del <strong className="text-white">{drawDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</strong></p>
+            </div>
+          )}
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 space-y-1">
+            <p className="text-red-400 font-bold text-sm">⚠️ Acción irreversible</p>
+            <p className="text-red-300/70 text-xs">Una vez ejecutado el sorteo no se puede repetir ni deshacer.</p>
+          </div>
+          {executeError && <div className="bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">⚠️ {executeError}</div>}
+          <button onClick={()=>setShowConfirm(true)} disabled={!canExecute}
+            className="w-full py-4 rounded-2xl font-black text-white text-lg shadow-xl transition-all active:scale-95 disabled:opacity-40"
+            style={{background:canExecute?"linear-gradient(135deg,#7C3AED,#A78BFA)":"rgba(255,255,255,0.1)"}}>
+            🎲 Ejecutar Sorteo
+          </button>
+        </div>
+      )}
+
+      {activeTab==="sorteo" && isExecuted && (
+        <div className="space-y-4">
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
+            <span className="text-2xl">✅</span>
+            <p className="text-green-400 font-medium">Sorteo ejecutado el {new Date(campaign.raffleExecutedAt).toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}</p>
+          </div>
+          <div className="flex justify-end">
+            <a href={`/api/campaigns/${id}/raffle-results/export`} className="text-violet-400 text-sm hover:text-violet-300 transition-colors">⬇️ Descargar CSV</a>
+          </div>
+          {loadingResults ? <p className="text-white/40 text-sm py-8 text-center">Cargando resultados...</p> : (
+            <div className="bg-white/5 border border-white/10 rounded-xl overflow-x-auto">
+              <table className="w-full text-sm min-w-[600px]">
+                <thead><tr className="border-b border-white/10">{["Premio","Tipo","Nombre","Email","Código","Canjeado"].map(h=><th key={h} className="text-white/40 font-medium text-left px-4 py-3">{h}</th>)}</tr></thead>
+                <tbody>
+                  {results.map((r:any,i:number)=>(
+                    <tr key={i} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="px-4 py-3 text-white/80 text-xs">{r.rafflePrizeTitle}</td>
+                      <td className="px-4 py-3">{r.isAlternate?<span className="text-amber-400 text-xs">🔄 Suplente</span>:<span className="text-green-400 text-xs">🏆 Ganador</span>}</td>
+                      <td className="px-4 py-3 text-white/80 text-xs">{r.leadName||"—"}</td>
+                      <td className="px-4 py-3 text-white/60 text-xs">{r.leadEmail}</td>
+                      <td className="px-4 py-3 font-mono text-white/60 text-xs">{r.redemptionCode}</td>
+                      <td className="px-4 py-3">{r.isRedeemed?<span className="text-green-400 text-xs">✅ Sí</span>:<span className="text-white/30 text-xs">No</span>}</td>
+                    </tr>
+                  ))}
+                  {results.length===0&&<tr><td colSpan={6} className="px-4 py-8 text-center text-white/30">Sin resultados</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {results.some((r:any)=>r.isAlternate) && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+              <p className="text-amber-300 text-xs">ℹ️ Los suplentes no reciben email automático. Si un ganador no reclama su premio antes de la fecha de vencimiento, contactá al suplente manualmente.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 border border-red-500/30 rounded-2xl p-6 max-w-sm w-full space-y-4">
+            <h3 className="text-white font-bold text-lg">¿Ejecutar el sorteo?</h3>
+            <p className="text-white/60 text-sm">Esta acción es irreversible. Se seleccionarán ganadores al azar y se enviarán emails automáticamente.</p>
+            {executeError && <p className="text-red-400 text-sm">{executeError}</p>}
+            <div className="flex gap-3">
+              <button onClick={()=>setShowConfirm(false)} className="flex-1 py-3 rounded-xl text-white/60 bg-white/5 hover:bg-white/10 transition-colors">Cancelar</button>
+              <button onClick={executeRaffle} disabled={executing} className="flex-1 py-3 rounded-xl text-white font-bold bg-violet-600 hover:bg-violet-500 disabled:opacity-50 transition-colors">{executing?"Ejecutando...":"🎲 Confirmar"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EditCampaignPage() {
   const router = useRouter();
   const { id } = useParams();
@@ -16,10 +249,13 @@ export default function EditCampaignPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [form, setForm] = useState<any>(null);
 
+  const [rawCampaignData, setRawCampaignData] = useState<any>(null);
+
   useEffect(() => {
     fetch(`/api/campaigns/${id}`)
       .then(r => r.json())
       .then(data => {
+        setRawCampaignData(data);
         setForm({
           name: data.name || "",
           gameType: data.gameType || "RASCA_Y_GANA",
@@ -159,6 +395,11 @@ export default function EditCampaignPage() {
       <p className="text-white/40">Campaña no encontrada</p>
     </div>
   );
+
+  // Vista especial para SORTEO
+  if (rawCampaignData?.gameType === "SORTEO") {
+    return <SorteoView id={id as string} campaignData={rawCampaignData}/>;
+  }
 
   return (
     <div className="max-w-2xl mx-auto">

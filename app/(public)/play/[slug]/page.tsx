@@ -6,6 +6,7 @@ import confetti from "canvas-confetti";
 import TrackingPixels, { trackLead, trackWin } from "@/components/TrackingPixels";
 
 type Prize = { title: string; stock: number; validDays: number; deliveredCount: number; prizeImage?: string };
+type RafflePrize = { id: string; title: string; description?: string; imageUrl?: string; stock: number };
 type Campaign = {
   id: string; name: string; gameType: string; primaryColor: string;
   secondaryColor: string; backgroundColor: string; language: string;
@@ -14,6 +15,9 @@ type Campaign = {
   upsellLink?: string; upsellImage?: string; upsellImageUrl?: string;
   endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string; logoUrl?: string; consolePrize?: { id: string } | null;
   metaPixelId?: string | null; googleAnalyticsId?: string | null; tiktokPixelId?: string | null;
+  // Sorteo
+  raffleDrawDate?: string; raffleTerms?: string; raffleTermsUrl?: string;
+  raffleClaimDays?: number; raffleExecutedAt?: string | null; rafflePrizes?: RafflePrize[];
 };
 type PrizeResult = {
   isWinner: boolean; prizeTitle?: string; redemptionCode?: string;
@@ -235,6 +239,182 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
 }
 
 
+function RaffleFlow({ campaign }: { campaign: Campaign }) {
+  const [raffleStep, setRaffleStep] = useState<"landing"|"form"|"confirm">("landing");
+  const [form, setForm] = useState({ email:"", whatsapp:"", countryCode:"+54", nombre:"" });
+  const [formError, setFormError] = useState("");
+  const [registering, setRegistering] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [registered, setRegistered] = useState<{email:string;nombre:string}|null>(null);
+
+  const now = new Date();
+  const endDate = campaign.endDate ? new Date(campaign.endDate) : null;
+  const drawDate = campaign.raffleDrawDate ? new Date(campaign.raffleDrawDate) : null;
+  const isRegistrationClosed = endDate ? now > endDate : false;
+  const isExecuted = !!campaign.raffleExecutedAt;
+
+  const maskedEmail = (email: string) => {
+    const [user, domain] = email.split("@");
+    return user.slice(0,3) + "***@" + domain;
+  };
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault(); setFormError(""); setRegistering(true);
+    if (!termsAccepted) { setFormError("Debés aceptar los términos y condiciones"); setRegistering(false); return; }
+    try {
+      const res = await fetch("/api/play/register", { method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ campaignId: campaign.id, email: form.email, whatsapp: form.countryCode+form.whatsapp, extraFields: { nombre: form.nombre } }) });
+      const data = await res.json();
+      if (!res.ok) { setFormError(data.error||"Error al registrarse"); setRegistering(false); return; }
+      trackLead();
+      setRegistered({ email: form.email, nombre: form.nombre });
+      setRaffleStep("confirm");
+    } catch { setFormError("Error de conexión"); }
+    setRegistering(false);
+  }
+
+  // Vista: sorteo ya ejecutado — mostrar ganadores públicos
+  if (isExecuted) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center p-6 rounded-2xl" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}22, ${campaign.primaryColor}11)`, border:`1px solid ${campaign.primaryColor}40`}}>
+          <p className="text-white font-black text-2xl mb-1">🎉 ¡El sorteo ya se realizó!</p>
+          <p className="text-white/60 text-sm">Ejecutado el {new Date(campaign.raffleExecutedAt!).toLocaleDateString("es-AR", {day:"numeric",month:"long",year:"numeric"})}</p>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+          <p className="text-white font-bold">🏆 Ganadores</p>
+          <p className="text-white/50 text-sm">Los ganadores fueron notificados por email con su código de canje.</p>
+          <p className="text-white/30 text-xs">Si creés que debés haber ganado, contactá al organizador.</p>
+        </div>
+        {campaign.raffleTermsUrl && (
+          <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
+        )}
+      </div>
+    );
+  }
+
+  // Vista: registro cerrado pero sorteo no ejecutado
+  if (isRegistrationClosed && !isExecuted) {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="text-6xl">⏳</div>
+        <div>
+          <p className="text-white font-black text-xl">Registro cerrado</p>
+          <p className="text-white/60 text-sm mt-2">El período de inscripción ha finalizado.</p>
+          {drawDate && <p className="text-white/50 text-sm mt-1">El sorteo se realizará el {drawDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</p>}
+        </div>
+        {campaign.raffleTermsUrl && (
+          <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
+        )}
+      </div>
+    );
+  }
+
+  // PASO A — Landing
+  if (raffleStep === "landing") {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl p-5 text-center" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}22, ${campaign.primaryColor}11)`, border:`1px solid ${campaign.primaryColor}40`}}>
+          <p className="text-white font-black text-xl mb-1">🎲 Gran Sorteo</p>
+          <p className="text-white/60 text-sm">Participá gratuitamente y podés ganar</p>
+        </div>
+        {campaign.rafflePrizes && campaign.rafflePrizes.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-white/40 text-xs uppercase tracking-widest text-center">Premios a sortear</p>
+            {campaign.rafflePrizes.map((prize) => (
+              <div key={prize.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+                {prize.imageUrl && <div className="w-full aspect-video overflow-hidden max-h-48"><img src={prize.imageUrl} alt={prize.title} className="w-full h-full object-cover"/></div>}
+                <div className="p-4">
+                  <p className="text-white font-bold">{prize.title}</p>
+                  {prize.description && <p className="text-white/50 text-sm mt-1">{prize.description}</p>}
+                  {prize.stock > 1 && <p className="text-white/30 text-xs mt-1">{prize.stock} ganadores</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-2 text-sm">
+          {endDate && <div className="flex items-center gap-2"><span className="text-white/40">📅 Cierre de inscripción:</span><span className="text-white font-medium">{endDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric"})}</span></div>}
+          {drawDate && <div className="flex items-center gap-2"><span className="text-white/40">🎲 Fecha del sorteo:</span><span className="text-white font-medium">{drawDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span></div>}
+        </div>
+        <button onClick={()=>setRaffleStep("form")}
+          className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
+          style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
+          🎯 ¡Quiero participar!
+        </button>
+        {campaign.raffleTermsUrl && (
+          <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
+        )}
+      </div>
+    );
+  }
+
+  // PASO B — Formulario
+  if (raffleStep === "form") {
+    return (
+      <form onSubmit={handleRegister} className="space-y-4">
+        <p className="text-white font-bold text-lg">Completá tus datos</p>
+        <input required type="text" placeholder="Nombre completo" value={form.nombre} onChange={e=>setForm(p=>({...p,nombre:e.target.value}))}
+          style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",width:"100%",outline:"none"}}/>
+        <input required type="email" placeholder="Email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))}
+          style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",width:"100%",outline:"none"}}/>
+        <div style={{display:"flex",gap:"0.5rem"}}>
+          <select value={form.countryCode} onChange={e=>setForm(p=>({...p,countryCode:e.target.value}))} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",outline:"none",flexShrink:0}}>
+            <option value="+54">🇦🇷 +54</option><option value="+55">🇧🇷 +55</option><option value="+56">🇨🇱 +56</option>
+            <option value="+57">🇨🇴 +57</option><option value="+52">🇲🇽 +52</option><option value="+51">🇵🇪 +51</option>
+            <option value="+598">🇺🇾 +598</option><option value="+595">🇵🇾 +595</option><option value="+591">🇧🇴 +591</option>
+            <option value="+593">🇪🇨 +593</option><option value="+34">🇪🇸 +34</option><option value="+1">🇺🇸 +1</option>
+          </select>
+          <input required type="tel" placeholder="WhatsApp" value={form.whatsapp} onChange={e=>setForm(p=>({...p,whatsapp:e.target.value}))}
+            style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",outline:"none",flex:1}}/>
+        </div>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input type="checkbox" checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-violet-600 flex-shrink-0"/>
+          <span className="text-white/70 text-sm">
+            Acepto los{" "}
+            {campaign.raffleTermsUrl
+              ? <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">términos y condiciones</a>
+              : "términos y condiciones"
+            }
+          </span>
+        </label>
+        {formError && <div className="flex items-center gap-2 bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3"><span>⚠️</span><p className="text-red-400 text-sm">{formError}</p></div>}
+        <button type="submit" disabled={registering}
+          className="w-full py-5 rounded-2xl font-black text-white text-lg shadow-xl transition-all active:scale-95 disabled:opacity-50"
+          style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
+          {registering ? "⏳ Un momento..." : "✅ Confirmar participación"}
+        </button>
+        <button type="button" onClick={()=>setRaffleStep("landing")} className="w-full py-3 rounded-xl text-white/40 text-sm hover:text-white/60 transition-colors">← Volver</button>
+      </form>
+    );
+  }
+
+  // PASO C — Confirmación
+  return (
+    <div className="space-y-6 text-center">
+      <div className="text-7xl animate-bounce">🎉</div>
+      <div>
+        <p className="text-white font-black text-2xl">¡Ya estás participando!</p>
+        <p className="text-white/60 text-sm mt-2">Tu inscripción fue registrada correctamente</p>
+      </div>
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3 text-left">
+        {registered?.nombre && <div><p className="text-white/40 text-xs">Nombre</p><p className="text-white font-medium">{registered.nombre}</p></div>}
+        <div><p className="text-white/40 text-xs">Email</p><p className="text-white font-medium">{registered?.email}</p></div>
+        {campaign.rafflePrizes && campaign.rafflePrizes.length > 0 && (
+          <div>
+            <p className="text-white/40 text-xs mb-2">Premios a sortear</p>
+            {campaign.rafflePrizes.map(p=><p key={p.id} className="text-white/70 text-sm">🏆 {p.title}</p>)}
+          </div>
+        )}
+        {drawDate && <div><p className="text-white/40 text-xs">Fecha del sorteo</p><p className="text-white font-medium">{drawDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</p></div>}
+      </div>
+      <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
+        <p className="text-violet-300 text-sm">📧 Si eres ganador/a, recibirás un email con tu código de canje</p>
+      </div>
+    </div>
+  );
+}
+
 export default function PlayPage() {
   const { slug } = useParams();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
@@ -282,6 +462,29 @@ export default function PlayPage() {
       <div className="text-center"><div className="text-5xl mb-4">😕</div><p className="text-white text-xl font-bold">Campaña no encontrada</p></div>
     </div>
   );
+
+  // Flujo especial para SORTEO
+  if (campaign.gameType === "SORTEO") {
+    return (
+      <div className="min-h-screen flex flex-col" style={{backgroundColor:campaign.backgroundColor}}>
+        <TrackingPixels metaPixelId={campaign.metaPixelId} googleAnalyticsId={campaign.googleAnalyticsId} tiktokPixelId={campaign.tiktokPixelId} />
+        <div className="flex-1 max-w-md mx-auto w-full px-5 pt-8 pb-10">
+          <div className="text-center mb-6">
+            {campaign.logoUrl ? (
+              <img src={campaign.logoUrl} className="w-16 h-16 object-contain rounded-xl mb-2 mx-auto" alt="logo"/>
+            ) : (
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-xl"
+                style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
+                <span className="text-3xl">🎲</span>
+              </div>
+            )}
+            <h1 className="text-white text-2xl font-black tracking-tight">{campaign.name}</h1>
+          </div>
+          <RaffleFlow campaign={campaign}/>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col" style={{backgroundColor:campaign.backgroundColor}}>

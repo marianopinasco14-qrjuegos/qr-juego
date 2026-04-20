@@ -6,7 +6,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const session = token ? { user: (await import("@/lib/auth")).verifyToken(token) } : null;
   if (!session?.user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   const organizationId = (session.user as any).organizationId;
-  const campaign = await prisma.campaign.findFirst({ where: { id: params.id, organizationId }, include: { prizes: true, consolePrize: true, emailTemplates: true, _count: { select: { leads: true, scans: true } } } });
+  const campaign = await prisma.campaign.findFirst({ where: { id: params.id, organizationId }, include: { prizes: true, consolePrize: true, emailTemplates: true, rafflePrizes: true, _count: { select: { leads: true, scans: true } } } });
   if (!campaign) return NextResponse.json({ error: "No encontrada" }, { status: 404 });
   return NextResponse.json(campaign);
 }
