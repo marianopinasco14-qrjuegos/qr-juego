@@ -405,6 +405,14 @@ function RaffleFlow({ campaign, slug }: { campaign: Campaign; slug: string }) {
       <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4">
         <p className="text-violet-300 text-sm">📧 Si eres ganador/a, recibirás un email con tu código de canje</p>
       </div>
+      {campaign.closedRedirectUrl && (
+        <a href={campaign.closedRedirectUrl} target="_blank" rel="noopener noreferrer"
+          className="w-full py-4 rounded-2xl font-bold text-white text-center block transition-all active:scale-95"
+          style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
+          Ir al sitio →
+        </a>
+      )}
+      <UpsellBar campaign={campaign}/>
     </div>
   );
 }

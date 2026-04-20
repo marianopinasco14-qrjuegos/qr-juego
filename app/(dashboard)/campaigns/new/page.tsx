@@ -14,7 +14,7 @@ export default function NewCampaignPage() {
   });
   const upd=(d:any)=>setForm((p:any)=>({...p,...d}));
   const isSorteo = form.gameType === "SORTEO";
-  const STEPS = isSorteo ? ["Mecánica","Branding","Premios Sorteo","Términos","Email"] : ["Mecánica","Branding","Premios","Email","Upseller"];
+  const STEPS = isSorteo ? ["Mecánica","Branding","Premios Sorteo","Términos","Upseller"] : ["Mecánica","Branding","Premios","Email","Upseller"];
   const totalSteps = STEPS.length;
   const canGo=()=>{
     if(step===1)return form.name.trim().length>=3;
@@ -32,7 +32,7 @@ export default function NewCampaignPage() {
           logoUrl:form.logoUrl||null, primaryColor:form.primaryColor, secondaryColor:form.secondaryColor, backgroundColor:form.backgroundColor,
           language:form.language, ageGate:false, startDate:null, endDate:form.endDate||null,
           formFields:[{id:"nombre",label:"Nombre y apellido",type:"text",required:true}], closedRedirectUrl:null,
-          raffleDrawDate:form.raffleDrawDate||null, raffleClaimDays:form.raffleClaimDays||7, raffleTerms:form.raffleTerms||null, raffleTermsUrl:form.raffleTermsUrl||null, raffleLocked:false, upsellEnabled:false, closedBehavior:"LEAD_MAGNET",
+          raffleDrawDate:form.raffleDrawDate||null, raffleClaimDays:form.raffleClaimDays||7, raffleTerms:form.raffleTerms||null, raffleTermsUrl:form.raffleTermsUrl||null, raffleLocked:false, upsellEnabled:form.upsellEnabled, upsellTitle:form.upsellTitle||null, upsellPrice:form.upsellPrice||null, upsellCurrency:form.upsellCurrency||"ARS", upsellLink:form.upsellLink||null, upsellImageUrl:form.upsellImageUrl||null, closedRedirectUrl:form.closedRedirectUrl||null, closedBehavior:"LEAD_MAGNET",
         })});
         if(!r.ok){const err=await r.json();setSaveError(err.error||"Error al crear la campaña");setSaving(false);return;}
         const c=await r.json();
@@ -158,26 +158,47 @@ export default function NewCampaignPage() {
             <p className="text-amber-300 text-xs">⚠️ Asegurate de mencionar la fecha del sorteo (<strong>{form.raffleDrawDate?new Date(form.raffleDrawDate).toLocaleDateString("es-AR"):"—"}</strong>) en los términos y condiciones.</p>
           </div>
         </div>}
-        {step===5&&isSorteo&&<div className="space-y-4">
-          <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4 space-y-3">
-            <p className="text-white font-medium">📧 Email a ganadores del sorteo</p>
-            <p className="text-white/40 text-xs">Se envía automáticamente cuando ejecutás el sorteo</p>
-            <div><label className="text-white/70 text-xs block mb-1">Asunto</label><input value={form.emailRaffleWinner.subject} onChange={e=>upd({emailRaffleWinner:{...form.emailRaffleWinner,subject:e.target.value}})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none"/></div>
-            <div><label className="text-white/70 text-xs block mb-1">Mensaje</label><textarea rows={4} value={form.emailRaffleWinner.bodyHtml} onChange={e=>upd({emailRaffleWinner:{...form.emailRaffleWinner,bodyHtml:e.target.value}})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none"/></div>
-          </div>
-          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
-            <p className="text-white/70 text-xs font-bold mb-2">📋 Variables disponibles:</p>
-            <div className="space-y-1">
-              <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{name}}"}</code> — Nombre del ganador</p>
-              <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{prize}}"}</code> — Nombre del premio ganado</p>
-              <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{redemptionCode}}"}</code> — Código único de canje</p>
-              <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{expiresAt}}"}</code> — Fecha límite para reclamar</p>
-            </div>
-          </div>
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
-            <p className="text-blue-300 text-xs">ℹ️ Los suplentes <strong>NO</strong> reciben email. Si un ganador no reclama su premio, debés contactar al suplente manualmente.</p>
-          </div>
-        </div>}
+        {step===5&&isSorteo&&<div className="space-y-6">
+  <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl p-4 space-y-3">
+    <p className="text-white font-medium">📧 Email a ganadores del sorteo</p>
+    <p className="text-white/40 text-xs">Se envía automáticamente cuando ejecutás el sorteo</p>
+    <div><label className="text-white/70 text-xs block mb-1">Asunto</label><input value={form.emailRaffleWinner.subject} onChange={e=>upd({emailRaffleWinner:{...form.emailRaffleWinner,subject:e.target.value}})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none"/></div>
+    <div><label className="text-white/70 text-xs block mb-1">Mensaje</label><textarea rows={3} value={form.emailRaffleWinner.bodyHtml} onChange={e=>upd({emailRaffleWinner:{...form.emailRaffleWinner,bodyHtml:e.target.value}})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none"/></div>
+  </div>
+  <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+    <p className="text-white/70 text-xs font-bold mb-2">📋 Variables disponibles:</p>
+    <div className="space-y-1">
+      <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{name}}"}</code> — Nombre del ganador</p>
+      <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{prize}}"}</code> — Nombre del premio ganado</p>
+      <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{redemptionCode}}"}</code> — Código único de canje</p>
+      <p className="text-white/50 text-xs"><code className="text-violet-400">{"{{expiresAt}}"}</code> — Fecha límite para reclamar</p>
+    </div>
+  </div>
+  <div className="border-t border-white/10 pt-6 space-y-4">
+    <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+      <div><p className="text-white font-medium">Activar Upseller</p><p className="text-white/50 text-xs">Se muestra en la pantalla de confirmación de participación</p></div>
+      <button type="button" onClick={()=>upd({upsellEnabled:!form.upsellEnabled})} className={`w-12 h-6 rounded-full transition-all relative ${form.upsellEnabled?"bg-violet-600":"bg-white/20"}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${form.upsellEnabled?"left-6":"left-0.5"}`}/></button>
+    </div>
+    {form.upsellEnabled&&<div className="space-y-3">
+      <input value={form.upsellTitle} onChange={e=>upd({upsellTitle:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="Ej: Hamburguesa 20% OFF"/>
+      <div className="grid grid-cols-2 gap-3">
+        <input type="number" value={form.upsellPrice} onChange={e=>upd({upsellPrice:parseFloat(e.target.value)||0})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none" placeholder="Precio"/>
+        <select value={form.upsellCurrency} onChange={e=>upd({upsellCurrency:e.target.value})} className="w-full bg-gray-800 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none">{["ARS","USD","EUR","BRL","CLP","COP","MXN"].map(c=><option key={c}>{c}</option>)}</select>
+      </div>
+      <div className="space-y-2">
+        <label className="text-white/70 text-xs block mb-1">Imagen del producto (opcional)</label>
+        <input type="file" accept="image/*" onChange={async(e)=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2000000){alert("La imagen no puede superar 2MB");return;}const fd=new FormData();fd.append("file",f);const r=await fetch("/api/upload",{method:"POST",body:fd});const d=await r.json();if(d.url)upd({upsellImageUrl:d.url});}} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none cursor-pointer"/>
+        {form.upsellImageUrl&&<img src={form.upsellImageUrl} alt="preview" className="w-full aspect-square object-cover rounded-xl border border-white/10"/>}
+      </div>
+      <input type="url" value={form.upsellLink} onChange={e=>upd({upsellLink:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="https://wa.me/..."/>
+    </div>}
+    <div className="space-y-2">
+      <label className="text-white/70 text-xs block mb-1">URL de destino final (opcional)</label>
+      <input type="url" value={form.closedRedirectUrl||""} onChange={e=>upd({closedRedirectUrl:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="https://tusitio.com"/>
+      <p className="text-white/30 text-xs">Si está configurada, aparece un botón para ir a tu sitio en la pantalla de confirmación</p>
+    </div>
+  </div>
+</div>}
         {step===5&&!isSorteo&&<div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10"><div><p className="text-white font-medium">Activar Upseller</p><p className="text-white/50 text-xs">Banner fijo en el juego</p></div><button type="button" onClick={()=>upd({upsellEnabled:!form.upsellEnabled})} className={`w-12 h-6 rounded-full transition-all relative ${form.upsellEnabled?"bg-violet-600":"bg-white/20"}`}><div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ${form.upsellEnabled?"left-6":"left-0.5"}`}/></button></div>
           <div className="space-y-2 mt-2"><label className="text-white/70 text-xs block mb-1">URL de destino final (opcional)</label><input type="url" value={form.finalUrl} onChange={e=>upd({finalUrl:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="https://tusitio.com"/><p className="text-white/30 text-xs">Al finalizar el juego, el cliente será redirigido a esta URL</p></div>{form.upsellEnabled&&<div className="space-y-3"><input value={form.upsellTitle} onChange={e=>upd({upsellTitle:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="Ej: Hamburguesa 20% OFF"/><div className="grid grid-cols-2 gap-3"><input type="number" value={form.upsellPrice} onChange={e=>upd({upsellPrice:parseFloat(e.target.value)||0})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none" placeholder="Precio"/><select value={form.upsellCurrency} onChange={e=>upd({upsellCurrency:e.target.value})} className="w-full bg-gray-800 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none">{["ARS","USD","EUR","BRL","CLP","COP","MXN"].map(c=><option key={c}>{c}</option>)}</select></div><div className="space-y-2"><label className="text-white/70 text-xs block mb-1">Imagen del producto (opcional)</label><input type="file" accept="image/*" onChange={async(e)=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2000000){alert("La imagen no puede superar 2MB");return;}const fd=new FormData();fd.append("file",f);const r=await fetch("/api/upload",{method:"POST",body:fd});const d=await r.json();if(d.url)upd({upsellImageUrl:d.url});}} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none cursor-pointer"/>{(form as any).upsellImageUrl&&<img src={(form as any).upsellImageUrl} alt="preview" className="w-full aspect-square object-cover rounded-xl border border-white/10"/>}</div><input type="url" value={form.upsellLink} onChange={e=>upd({upsellLink:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="https://wa.me/..."/></div>}
