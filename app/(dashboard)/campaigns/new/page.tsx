@@ -32,7 +32,7 @@ export default function NewCampaignPage() {
           logoUrl:form.logoUrl||null, primaryColor:form.primaryColor, secondaryColor:form.secondaryColor, backgroundColor:form.backgroundColor,
           language:form.language, ageGate:false, startDate:null, endDate:form.endDate||null,
           formFields:[{id:"nombre",label:"Nombre y apellido",type:"text",required:true}], closedRedirectUrl:null,
-          raffleDrawDate:form.raffleDrawDate||null, raffleClaimDays:form.raffleClaimDays||7, raffleTerms:form.raffleTerms||null, raffleTermsUrl:form.raffleTermsUrl||null, raffleLocked:false,
+          raffleDrawDate:form.raffleDrawDate||null, raffleClaimDays:form.raffleClaimDays||7, raffleTerms:form.raffleTerms||null, raffleTermsUrl:form.raffleTermsUrl||null, raffleLocked:false, upsellEnabled:false, closedBehavior:"LEAD_MAGNET",
         })});
         if(!r.ok){const err=await r.json();setSaveError(err.error||"Error al crear la campaña");setSaving(false);return;}
         const c=await r.json();
