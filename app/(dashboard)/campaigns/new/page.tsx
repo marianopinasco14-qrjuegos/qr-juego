@@ -39,7 +39,8 @@ export default function NewCampaignPage() {
         for(const p of form.rafflePrizes.filter((p:any)=>p.title.trim()))
           await fetch(`/api/campaigns/${c.id}/raffle-prizes`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
         await fetch(`/api/campaigns/${c.id}/email-templates`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify([{type:"RAFFLE_WINNER",...form.emailRaffleWinner}])});
-        await fetch(`/api/campaigns/${c.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"ACTIVE"})});
+        const autoTermsUrl = `${window.location.origin}/terminos/${c.qrSlug}`;
+        await fetch(`/api/campaigns/${c.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"ACTIVE",raffleTermsUrl:autoTermsUrl})});
       } else {
         const r=await fetch("/api/campaigns",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,startDate:form.startDate||null,endDate:form.endDate||null,upsellTitle:form.upsellTitle||null,upsellPrice:form.upsellPrice||null,upsellLink:form.upsellLink||null,formFields:[{id:"nombre",label:"Nombre y apellido",type:"text",required:true}],closedRedirectUrl:null})});
         if(!r.ok){const err=await r.json();setSaveError(err.error||"Error al crear la campaña");setSaving(false);return;}
@@ -101,7 +102,7 @@ export default function NewCampaignPage() {
             <input value={p.title} onChange={e=>{const ps=[...form.rafflePrizes];ps[i].title=e.target.value;upd({rafflePrizes:ps});}} className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="Nombre del premio *"/>
             <input value={p.description||""} onChange={e=>{const ps=[...form.rafflePrizes];ps[i].description=e.target.value;upd({rafflePrizes:ps});}} className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white placeholder-white/40 text-sm focus:outline-none" placeholder="Descripción (opcional)"/>
             <div className="space-y-2"><label className="text-white/50 text-xs block mb-1">Imagen (opcional)</label><input type="file" accept="image/*" onChange={async(e)=>{const f=e.target.files?.[0];if(!f)return;if(f.size>2000000){alert("La imagen no puede superar 2MB");return;}const fd=new FormData();fd.append("file",f);const r=await fetch("/api/upload",{method:"POST",body:fd});const d=await r.json();if(d.url){const ps=[...form.rafflePrizes];ps[i].imageUrl=d.url;upd({rafflePrizes:ps});}}} className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none cursor-pointer"/>{p.imageUrl&&<img src={p.imageUrl} alt="preview" className="w-full aspect-video object-cover rounded-lg border border-white/10 max-h-48"/>}</div>
-            <div><label className="text-white/50 text-xs block mb-1">Cantidad de ganadores</label><input type="number" min="1" value={p.stock} onChange={e=>{const ps=[...form.rafflePrizes];ps[i].stock=parseInt(e.target.value)||1;upd({rafflePrizes:ps});}} className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-2 text-white text-sm focus:outline-none"/></div>
+            <div><label className="text-white/50 text-xs block mb-1">Stock disponible</label><input type="number" min="1" value={p.stock} onChange={e=>{const ps=[...form.rafflePrizes];ps[i].stock=parseInt(e.target.value)||1;upd({rafflePrizes:ps});}} className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-2 text-white text-sm focus:outline-none"/><p className="text-white/30 text-xs mt-1">Unidades disponibles de este premio</p></div>
             {form.rafflePrizes.length>1&&<button type="button" onClick={()=>upd({rafflePrizes:form.rafflePrizes.filter((_:any,j:number)=>j!==i)})} className="text-red-400 text-xs hover:text-red-300">🗑️ Eliminar</button>}
           </div>)}
           <div className="grid grid-cols-2 gap-3">
@@ -145,7 +146,12 @@ export default function NewCampaignPage() {
             <p className="text-white/40 text-xs mb-3">Importante: mencioná la fecha del sorteo en los T&C</p>
             <div className="space-y-3">
               <div><label className="text-white/70 text-xs block mb-1">Texto de T&C completo</label><textarea rows={6} value={form.raffleTerms} onChange={e=>upd({raffleTerms:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none" placeholder="Bases y condiciones del sorteo..."/></div>
-              <div><label className="text-white/70 text-xs block mb-1">URL pública donde se publican los T&C (opcional)</label><input type="url" value={form.raffleTermsUrl} onChange={e=>upd({raffleTermsUrl:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none" placeholder="https://tusitio.com/bases-sorteo"/></div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+                <p className="text-blue-300 text-sm font-medium mb-1">🔗 Página de T&C generada automáticamente</p>
+                <p className="text-blue-200/60 text-xs">Una vez creado el sorteo, los términos y condiciones estarán disponibles en:</p>
+                <p className="text-blue-300 font-mono text-xs mt-2 break-all">{typeof window !== "undefined" ? window.location.origin : ""}/terminos/[slug-del-sorteo]</p>
+                <p className="text-blue-200/50 text-xs mt-2">Este link se incluye automáticamente en el formulario de participación.</p>
+              </div>
             </div>
           </div>
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">

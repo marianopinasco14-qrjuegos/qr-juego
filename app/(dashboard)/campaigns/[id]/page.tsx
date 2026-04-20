@@ -128,9 +128,18 @@ function SorteoView({ id, campaignData }: { id: string; campaignData: any }) {
               ))}
             </div>
           )}
-          {campaign.raffleTermsUrl && (
-            <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-violet-400 text-sm underline">Ver términos y condiciones ↗</a>
-          )}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+            <p className="text-white/50 text-xs mb-1">🔗 Página de Términos y Condiciones</p>
+            <a
+              href={`/terminos/${campaign.qrSlug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-400 text-sm font-mono hover:text-violet-300 transition-colors break-all"
+            >
+              {typeof window !== "undefined" ? window.location.origin : ""}/terminos/{campaign.qrSlug}
+            </a>
+            <p className="text-white/30 text-xs mt-1">Este link se muestra a los participantes en el formulario</p>
+          </div>
         </div>
       )}
 

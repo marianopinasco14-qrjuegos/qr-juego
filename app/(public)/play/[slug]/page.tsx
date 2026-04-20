@@ -239,7 +239,7 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
 }
 
 
-function RaffleFlow({ campaign }: { campaign: Campaign }) {
+function RaffleFlow({ campaign, slug }: { campaign: Campaign; slug: string }) {
   const [raffleStep, setRaffleStep] = useState<"landing"|"form"|"confirm">("landing");
   const [form, setForm] = useState({ email:"", whatsapp:"", countryCode:"+54", nombre:"" });
   const [formError, setFormError] = useState("");
@@ -286,9 +286,7 @@ function RaffleFlow({ campaign }: { campaign: Campaign }) {
           <p className="text-white/50 text-sm">Los ganadores fueron notificados por email con su código de canje.</p>
           <p className="text-white/30 text-xs">Si creés que debés haber ganado, contactá al organizador.</p>
         </div>
-        {campaign.raffleTermsUrl && (
-          <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
-        )}
+        <a href={`/terminos/${slug}`} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
       </div>
     );
   }
@@ -303,9 +301,7 @@ function RaffleFlow({ campaign }: { campaign: Campaign }) {
           <p className="text-white/60 text-sm mt-2">El período de inscripción ha finalizado.</p>
           {drawDate && <p className="text-white/50 text-sm mt-1">El sorteo se realizará el {drawDate.toLocaleDateString("es-AR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</p>}
         </div>
-        {campaign.raffleTermsUrl && (
-          <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
-        )}
+        <a href={`/terminos/${slug}`} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
       </div>
     );
   }
@@ -342,9 +338,7 @@ function RaffleFlow({ campaign }: { campaign: Campaign }) {
           style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
           🎯 ¡Quiero participar!
         </button>
-        {campaign.raffleTermsUrl && (
-          <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
-        )}
+        <a href={`/terminos/${slug}`} target="_blank" rel="noopener noreferrer" className="block text-center text-violet-400 text-sm underline">Ver términos y condiciones</a>
       </div>
     );
   }
@@ -369,17 +363,17 @@ function RaffleFlow({ campaign }: { campaign: Campaign }) {
             style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",outline:"none",flex:1}}/>
         </div>
         <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)} className="mt-1 w-5 h-5 rounded accent-violet-600 flex-shrink-0"/>
-          <span className="text-white/70 text-sm">
-            Acepto los{" "}
-            {campaign.raffleTermsUrl
-              ? <a href={campaign.raffleTermsUrl} target="_blank" rel="noopener noreferrer" className="text-violet-400 underline">términos y condiciones</a>
-              : "términos y condiciones"
-            }
+          <input type="checkbox" required checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)} className="mt-1 w-4 h-4 accent-violet-500 shrink-0"/>
+          <span className="text-white/60 text-sm">
+            Al participar acepto los{" "}
+            <a href={`/terminos/${slug}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 underline hover:text-violet-300">
+              términos y condiciones
+            </a>
+            {" "}del sorteo
           </span>
         </label>
         {formError && <div className="flex items-center gap-2 bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3"><span>⚠️</span><p className="text-red-400 text-sm">{formError}</p></div>}
-        <button type="submit" disabled={registering}
+        <button type="submit" disabled={registering || !termsAccepted}
           className="w-full py-5 rounded-2xl font-black text-white text-lg shadow-xl transition-all active:scale-95 disabled:opacity-50"
           style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
           {registering ? "⏳ Un momento..." : "✅ Confirmar participación"}
@@ -480,7 +474,7 @@ export default function PlayPage() {
             )}
             <h1 className="text-white text-2xl font-black tracking-tight">{campaign.name}</h1>
           </div>
-          <RaffleFlow campaign={campaign}/>
+          <RaffleFlow campaign={campaign} slug={slug as string}/>
         </div>
       </div>
     );
