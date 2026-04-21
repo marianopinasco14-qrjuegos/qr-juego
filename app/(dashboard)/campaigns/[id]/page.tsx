@@ -307,6 +307,7 @@ export default function EditCampaignPage() {
             subject: data.emailTemplates?.find((t:any)=>t.type==="CONSOLE")?.subject || "Tu regalo te espera 🎁",
             bodyHtml: data.emailTemplates?.find((t:any)=>t.type==="CONSOLE")?.bodyHtml || "",
           },
+          gameTerms: data.raffleTerms || "",
         });
         setLoading(false);
       })
@@ -343,6 +344,8 @@ export default function EditCampaignPage() {
           closedBehavior: form.closedBehavior,
           closedRedirectUrl: form.closedRedirectUrl || null,
           status: form.status,
+          raffleTerms: form.gameTerms || null,
+          raffleTermsUrl: form.gameTerms ? `${window.location.origin}/terminos/${rawCampaignData?.qrSlug}` : null,
         }),
       });
       for (const p of form.prizes.filter((p: any) => p.title.trim())) {
@@ -470,6 +473,10 @@ export default function EditCampaignPage() {
             <div><label className="text-white/70 text-sm block mb-1">Fecha fin</label><input type="date" value={form.endDate} onChange={e=>upd({endDate:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"/></div>
           </div>
           <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl"><input type="checkbox" id="finishOnStock" checked={form.finishOnStock||false} onChange={e=>upd({finishOnStock:e.target.checked})} className="w-5 h-5 rounded accent-violet-600 cursor-pointer"/><label htmlFor="finishOnStock" className="text-white/80 text-sm cursor-pointer">Finalizar cuando se agoten todos los premios</label></div>
+          <div className="space-y-2">
+  <label className="text-white font-medium block">📋 Términos y condiciones (opcional)</label>
+  <textarea rows={5} value={form.gameTerms||""} onChange={e=>upd({gameTerms:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none" placeholder="Ej: El premio no es transferible ni canjeable por dinero en efectivo..."/>
+</div>
         </div>}
 
         {step===4&&<div className="space-y-4">

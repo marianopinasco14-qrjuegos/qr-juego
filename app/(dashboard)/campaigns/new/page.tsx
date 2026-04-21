@@ -7,7 +7,8 @@ export default function NewCampaignPage() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const [form, setForm] = useState<any>({ name:"", gameType:"RASCA_Y_GANA", attemptsPerSession:3, participationLimit:"once_email", logoUrl:"", primaryColor:"#7C3AED", secondaryColor:"#A78BFA", backgroundColor:"#1a1a2e", language:"es", ageGate:false, prizes:[{title:"",stock:10,priority:5,frequency:50,validDays:30}], consolePrize:{title:"",couponCode:""}, startDate:"", endDate:"", emailWinner:{subject:"🎉 ¡Ganaste un premio!",bodyHtml:"Felicitaciones {{name}}! Ganaste: {{prize}}. Tu código es: {{redemptionCode}}. Válido hasta: {{expiresAt}}"}, emailConsole:{subject:"Tu regalo te espera 🎁",bodyHtml:"Gracias por participar! Tu código de descuento es: {{couponCode}}"}, upsellEnabled:false, upsellTitle:"", upsellPrice:0, upsellCurrency:"ARS", upsellLink:"", upsellImageUrl:"", closedBehavior:"LEAD_MAGNET",
+  const [form, setForm] = useState<any>({ name:"", gameType:"RASCA_Y_GANA", attemptsPerSession:3, participationLimit:"once_email", logoUrl:"", primaryColor:"#7C3AED", secondaryColor:"#A78BFA", backgroundColor:"#1a1a2e", language:"es", ageGate:false, prizes:[{title:"",stock:10,priority:5,frequency:50,validDays:30}], consolePrize:{title:"",couponCode:""},
+    gameTerms:"", startDate:"", endDate:"", emailWinner:{subject:"🎉 ¡Ganaste un premio!",bodyHtml:"Felicitaciones {{name}}! Ganaste: {{prize}}. Tu código es: {{redemptionCode}}. Válido hasta: {{expiresAt}}"}, emailConsole:{subject:"Tu regalo te espera 🎁",bodyHtml:"Gracias por participar! Tu código de descuento es: {{couponCode}}"}, upsellEnabled:false, upsellTitle:"", upsellPrice:0, upsellCurrency:"ARS", upsellLink:"", upsellImageUrl:"", closedBehavior:"LEAD_MAGNET",
     // Sorteo
     rafflePrizes:[{title:"",description:"",imageUrl:"",stock:1}], raffleDrawDate:"", raffleClaimDays:7, raffleTerms:"", raffleTermsUrl:"",
     emailRaffleWinner:{subject:"🎲 ¡Ganaste en el sorteo!",bodyHtml:"¡Felicitaciones {{name}}! Ganaste: {{prize}}. Tu código de canje es: {{redemptionCode}}. Tenés hasta {{expiresAt}} para reclamarlo."},
@@ -48,7 +49,8 @@ export default function NewCampaignPage() {
         for(const p of form.prizes.filter((p:any)=>p.title.trim()))await fetch(`/api/campaigns/${c.id}/prizes`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
         if(form.consolePrize.title)await fetch(`/api/campaigns/${c.id}/console-prize`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form.consolePrize)});
         await fetch(`/api/campaigns/${c.id}/email-templates`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify([{type:"WINNER",...form.emailWinner},{type:"CONSOLE",...form.emailConsole}])});
-        await fetch(`/api/campaigns/${c.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"ACTIVE"})});
+        const autoTermsUrl = `${window.location.origin}/terminos/${c.qrSlug}`;
+        await fetch(`/api/campaigns/${c.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:"ACTIVE",raffleTerms:form.gameTerms||null,raffleTermsUrl:autoTermsUrl})});
       }
       router.push("/dashboard");
     } catch(e){console.error(e);setSaveError("Error de conexión. Intentá de nuevo.");setSaving(false);}
@@ -95,6 +97,15 @@ export default function NewCampaignPage() {
             <div><label className="text-white/70 text-sm block mb-1">Fecha fin</label><input type="date" value={form.endDate} onChange={e=>upd({endDate:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none"/></div>
           </div>
           <div className="flex items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-xl"><input type="checkbox" id="finishOnStock" checked={form.finishOnStock||false} onChange={e=>upd({finishOnStock:e.target.checked})} className="w-5 h-5 rounded accent-violet-600 cursor-pointer"/><label htmlFor="finishOnStock" className="text-white/80 text-sm cursor-pointer">Finalizar cuando se agoten todos los premios</label></div>
+          <div className="space-y-2">
+  <label className="text-white font-medium block">📋 Términos y condiciones (opcional)</label>
+  <p className="text-white/40 text-xs">Se mostrará en la página de T&C del juego junto a los datos del premio</p>
+  <textarea rows={5} value={form.gameTerms||""} onChange={e=>upd({gameTerms:e.target.value})} className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm focus:outline-none resize-none" placeholder="Ej: El premio no es transferible ni canjeable por dinero en efectivo..."/>
+  <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+    <p className="text-blue-300 text-xs">🔗 Una vez creado el juego, los T&C estarán disponibles en:</p>
+    <p className="text-blue-300 font-mono text-xs mt-1">{typeof window !== "undefined" ? window.location.origin : ""}/terminos/[slug-del-juego]</p>
+  </div>
+</div>
         </div>}
         {step===3&&isSorteo&&<div className="space-y-4">
           <div className="flex items-center justify-between"><label className="text-white font-medium">Premios del Sorteo</label><button type="button" onClick={()=>upd({rafflePrizes:[...form.rafflePrizes,{title:"",description:"",imageUrl:"",stock:1}]})} className="text-violet-400 text-sm">+ Agregar premio</button></div>

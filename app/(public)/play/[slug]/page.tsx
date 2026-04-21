@@ -427,6 +427,7 @@ export default function PlayPage() {
   const [form, setForm] = useState({email:"", whatsapp:"", countryCode:"+54", extra:{} as Record<string,string>});
   const [formError, setFormError] = useState("");
   const [registering, setRegistering] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(()=>{
     fetch(`/api/play/campaign?slug=${slug}`)
@@ -435,6 +436,7 @@ export default function PlayPage() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault(); setFormError(""); setRegistering(true);
+    if (!termsAccepted) { setFormError("Debés aceptar los términos y condiciones"); setRegistering(false); return; }
     try {
       const res = await fetch("/api/play/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,email:form.email,whatsapp:form.countryCode+form.whatsapp,extraFields:form.extra})});
       const data = await res.json();
@@ -541,13 +543,16 @@ export default function PlayPage() {
                   onChange={e=>setForm(p=>({...p,extra:{...p.extra,[field.id]:e.target.value}}))}
                   style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:"1rem",padding:"1rem",color:"white",fontSize:"0.875rem",width:"100%",outline:"none"}}/>
               ))}
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" required checked={termsAccepted} onChange={e=>setTermsAccepted(e.target.checked)} className="mt-1 w-4 h-4 accent-violet-500 shrink-0"/>
+                <span className="text-white/60 text-sm">Acepto los <a href={`/terminos/${slug}`} target="_blank" rel="noopener noreferrer" className="text-violet-400 underline hover:text-violet-300">términos y condiciones</a> y recibir comunicaciones al email ingresado</span>
+              </label>
               {formError && <div className="flex items-center gap-2 bg-red-500/15 border border-red-500/30 rounded-xl px-4 py-3"><span>⚠️</span><p className="text-red-400 text-sm">{formError}</p></div>}
-              <button type="submit" disabled={registering}
+              <button type="submit" disabled={registering || !termsAccepted}
                 className="w-full py-5 rounded-2xl font-black text-white text-lg shadow-xl transition-all active:scale-95 disabled:opacity-50 mt-2"
                 style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
                 {registering?"⏳ Un momento...":"¡Quiero participar! 🎯"}
               </button>
-              <p className="text-white/20 text-xs text-center">Al participar aceptás recibir comunicaciones al email ingresado</p>
             </form>
             {campaign.prizes && campaign.prizes.filter((p:any)=>p.stock>p.deliveredCount).length>0 && (
               <div className="space-y-3">
