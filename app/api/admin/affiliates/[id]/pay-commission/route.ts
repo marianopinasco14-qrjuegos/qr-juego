@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     prisma.affiliate.update({
       where: { id: params.id },
       data: {
-        totalCommissionEarned: { increment: amountPaid },
+        totalCommissionEarned: { increment: amountToNotify },
         pendingCommission: 0,
       },
     }),

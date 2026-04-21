@@ -149,6 +149,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Emitir JWT propio (mismo sistema que el login manual)
+  if (!user) return NextResponse.redirect(`${appUrl}/login?error=auth_failed`);
   const token = jwt.sign(
     {
       id: user.id,
