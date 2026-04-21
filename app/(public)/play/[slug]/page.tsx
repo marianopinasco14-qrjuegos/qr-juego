@@ -57,7 +57,7 @@ function UpsellBar({ campaign }: { campaign: Campaign }) {
   );
 }
 
-function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol, hasConsolePrize }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string; hasConsolePrize: boolean }) {
+function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol, hasConsolePrize }: { onComplete: () => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string; hasConsolePrize: boolean }) {
   const SYMBOLS = ['🍒','🌟','💎','🎯','🍀','🔔','🍋'];
   const [attempt, setAttempt] = useState(0);
   const [currentCard, setCurrentCard] = useState(() => Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
@@ -87,7 +87,7 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
 
   const handleNext = async () => {
     if (isMatch || attempt >= attemptsPerSession - 1) {
-      await onComplete(isMatch);
+      await onComplete();
     } else {
       setAttempt(a => a + 1);
       setCurrentCard(Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
@@ -161,7 +161,7 @@ function ScratchCard({ onComplete, primaryColor, secondaryColor, attemptsPerSess
   );
 }
 
-function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string }) {
+function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: () => void; primaryColor: string; secondaryColor: string }) {
   const SYMBOLS = ['🍒','⭐','💎','🎯','🍀','🔔','🍋'];
   const WINNER = '🍀';
   const [reels, setReels] = useState(['🎰','🎰','🎰']);
@@ -228,7 +228,7 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
           {spinning ? <span className="flex items-center justify-center gap-2"><span className="animate-spin">🌀</span> Girando...</span> : '🎰 ¡Tirar!'}
         </button>
       ) : (
-        <button onClick={() => onComplete(won)}
+        <button onClick={() => onComplete()}
           className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
           style={{background: won ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
           {won ? '🎁 Ver mi premio' : '🎁 Ver mi regalo'}
@@ -446,8 +446,8 @@ export default function PlayPage() {
     setRegistering(false);
   }
 
-  async function handleScratchComplete(playerWon: boolean) {
-    const res = await fetch("/api/play/scratch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,leadId,playerWon})});
+  async function handleScratchComplete() {
+    const res = await fetch("/api/play/scratch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({campaignId:campaign!.id,leadId})});
     const data = await res.json();
     if (data.prizeResult) { if (data.prizeResult.isWinner) trackWin(); setPrizeResult(data.prizeResult); setStep("result"); }
   }

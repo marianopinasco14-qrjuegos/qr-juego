@@ -5,17 +5,13 @@ import { sendWinnerEmail, sendConsoleEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
-    const { campaignId, leadId, playerWon } = await req.json();
+    const { campaignId, leadId } = await req.json();
     const ipAddress = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "0.0.0.0";
     const lead = await prisma.lead.findUnique({ where: { id: leadId }, include: { campaign: { include: { organization: true } } } });
     if (!lead || lead.campaignId !== campaignId) return NextResponse.json({ error: "Lead no valido." }, { status: 404 });
     const result = await prisma.$transaction(async (tx) => {
       await tx.scan.create({ data: { campaignId, leadId, ipAddress, attemptNumber: 1 } });
       await tx.organization.update({ where: { id: lead.campaign.organizationId }, data: { totalScans: { increment: 1 } } });
-      if (!playerWon) {
-        const consolePrize = await tx.consolePrize.findUnique({ where: { campaignId } });
-        return { isWinner: false, consolePrizeTitle: consolePrize?.title ?? null, consolePrizeCoupon: consolePrize?.couponCode ?? null };
-      }
       const prizeResult = await executePrizeEngine(campaignId, leadId, tx);
       if (prizeResult.isWinner) await tx.scan.updateMany({ where: { leadId, campaignId }, data: { isWinner: true } });
       return prizeResult;
