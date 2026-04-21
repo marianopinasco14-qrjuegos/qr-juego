@@ -90,7 +90,6 @@ export default function LoginPage() {
             Registrate gratis
           </Link>
         </p>
-        <p className="text-white/30 text-xs text-center mt-4">Demo: admin@qrjuego.com / Admin123!</p>
       </div>
     </div>
   );

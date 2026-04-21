@@ -218,7 +218,7 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
       {showResult && (
         <div className={`text-center p-4 rounded-2xl ${won ? 'bg-green-500/20 border border-green-500/30' : 'bg-white/5 border border-white/10'}`}>
           {won ? <p className="text-green-400 font-bold text-lg">🎉 ¡Tres tréboles! ¡Ganaste!</p>
-                : <p className="text-white/60 text-sm">No coinciden... ¡Mejor suerte la próxima!</p>}
+                : <p className="text-white/60 text-sm">No coinciden... ¡pero tenés un regalo esperándote!</p>}
         </div>
       )}
       {!done ? (
@@ -231,7 +231,7 @@ function SlotsGame({ onComplete, primaryColor, secondaryColor }: { onComplete: (
         <button onClick={() => onComplete(won)}
           className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
           style={{background: won ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-          {won ? '🎁 Ver mi premio' : '🎟️ Ver mi regalo'}
+          {won ? '🎁 Ver mi premio' : '🎁 Ver mi regalo'}
         </button>
       )}
     </div>
@@ -502,7 +502,7 @@ export default function PlayPage() {
               <span className="text-3xl">{campaign.gameType==="SLOTS"?"🎰":"🎫"}</span>
             </div>
           )}
-          <h1 className="text-white text-2xl font-black tracking-tight">{campaign.gameType==="RASCA_Y_GANA"?"Rasca y Gana":campaign.gameType==="SLOTS"?"Tragamonedas":"Juego"}</h1>
+          <h1 className="text-white text-2xl font-black tracking-tight">{campaign.name}</h1>
           <p className="text-white/40 text-sm mt-1">
             {step==="form"?"¡Completá tus datos y participá!":step==="game"?"¡Descubrí tu premio!":"Resultado de tu participación"}
           </p>
