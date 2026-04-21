@@ -40,7 +40,7 @@ export default function NewCampaignPage() {
           name:form.name, gameType:"SORTEO", attemptsPerSession:1, participationLimit:"once_email",
           logoUrl:form.logoUrl||null, primaryColor:form.primaryColor, secondaryColor:form.secondaryColor, backgroundColor:form.backgroundColor,
           language:form.language, ageGate:false, startDate:null, endDate:form.endDate||null,
-          formFields:[{id:"nombre",label:"Nombre y apellido",type:"text",required:true}], closedRedirectUrl:null,
+          formFields:[{id:"nombre",label:"Nombre y apellido",type:"text",required:true}],
           raffleDrawDate:form.raffleDrawDate||null, raffleClaimDays:form.raffleClaimDays||7, raffleTerms:form.raffleTerms||null, raffleTermsUrl:form.raffleTermsUrl||null, raffleLocked:false, upsellEnabled:form.upsellEnabled, upsellTitle:form.upsellTitle||null, upsellPrice:form.upsellPrice||null, upsellCurrency:form.upsellCurrency||"ARS", upsellLink:form.upsellLink||null, upsellImageUrl:form.upsellImageUrl||null, closedRedirectUrl:form.closedRedirectUrl||null, closedBehavior:"LEAD_MAGNET",
         })});
         if(!r.ok){const err=await r.json();setSaveError(err.error||"Error al crear la campaña");setSaving(false);return;}
