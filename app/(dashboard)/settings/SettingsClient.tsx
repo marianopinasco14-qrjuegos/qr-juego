@@ -20,7 +20,7 @@ interface Org {
 }
 
 interface Subscription {
-  id: string; status: string; provider: string;
+  id: string; status: string; provider: string | null;
   currentPeriodEnd: Date | null; trialEnd: Date | null; canceledAt: Date | null;
 }
 
