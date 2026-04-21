@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 const GAMES=[{id:"RASCA_Y_GANA",label:"Rasca y Gana",emoji:"🎫",desc:"Tarjeta táctil"},{id:"SLOTS",label:"Tragamonedas",emoji:"🎰",desc:"Tres rodillos"},{id:"SORTEO",label:"Sorteo",emoji:"🎲",desc:"Sorteo con fecha de cierre"}];
 export default function NewCampaignPage() {
@@ -7,6 +7,14 @@ export default function NewCampaignPage() {
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [hasStaff, setHasStaff] = useState<boolean|null>(null);
+
+  useEffect(() => {
+    fetch("/api/staff-pins")
+      .then(r => r.json())
+      .then(data => setHasStaff(Array.isArray(data) && data.some((p: any) => p.isActive)))
+      .catch(() => setHasStaff(false));
+  }, []);
   const [form, setForm] = useState<any>({ name:"", gameType:"RASCA_Y_GANA", attemptsPerSession:3, participationLimit:"once_email", logoUrl:"", primaryColor:"#7C3AED", secondaryColor:"#A78BFA", backgroundColor:"#1a1a2e", language:"es", ageGate:false, prizes:[{title:"",stock:10,priority:5,frequency:50,validDays:30}], consolePrize:{title:"",couponCode:""},
     gameTerms:"", startDate:"", endDate:"", emailWinner:{subject:"🎉 ¡Ganaste un premio!",bodyHtml:"Felicitaciones {{name}}! Ganaste: {{prize}}. Tu código es: {{redemptionCode}}. Válido hasta: {{expiresAt}}"}, emailConsole:{subject:"Tu regalo te espera 🎁",bodyHtml:"Gracias por participar! Tu código de descuento es: {{couponCode}}"}, upsellEnabled:false, upsellTitle:"", upsellPrice:0, upsellCurrency:"ARS", upsellLink:"", upsellImageUrl:"", closedBehavior:"LEAD_MAGNET",
     // Sorteo
@@ -57,6 +65,16 @@ export default function NewCampaignPage() {
   }
   return (
     <div className="max-w-2xl mx-auto">
+      {hasStaff === false && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 mb-6 flex items-start gap-4">
+          <span className="text-2xl">⚠️</span>
+          <div>
+            <p className="text-amber-400 font-bold">Necesitás crear un Staff PIN primero</p>
+            <p className="text-amber-300/70 text-sm mt-1">Para que tu equipo pueda canjear los premios, necesitás tener al menos un Staff PIN activo.</p>
+            <a href="/staff-pins" className="inline-block mt-3 bg-amber-500 hover:bg-amber-400 text-black font-bold px-4 py-2 rounded-xl text-sm transition-colors">Crear Staff PIN →</a>
+          </div>
+        </div>
+      )}
       <h1 className="text-white text-2xl font-bold mb-6">Crear nuevo QR Juego</h1>
       <div className="flex items-center gap-2 mb-8">
         {STEPS.map((s,i)=>(
