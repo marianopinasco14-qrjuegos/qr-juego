@@ -401,7 +401,7 @@ model Lead {
   scans       Scan[]
   winner      Winner?
   raffleWins  RaffleWinner[]
-  @@unique([campaignId, email])
+  @@index([campaignId, email])
   @@index([campaignId])
 }
 
