@@ -13,12 +13,19 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File;
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
 
+    const folderParam = formData.get("folder") as string | null;
+    let folder: string;
+    if (folderParam === "logo") folder = "jugalo/logos";
+    else if (folderParam === "prize") folder = "jugalo/prizes";
+    else if (folderParam === "upseller") folder = "jugalo/upseller";
+    else folder = "jugalo/general";
+
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const base64 = `data:${file.type};base64,${buffer.toString("base64")}`;
 
     const result = await cloudinary.uploader.upload(base64, {
-      folder: "qr-juego/upseller",
+      folder,
       max_bytes: 2000000,
     });
 

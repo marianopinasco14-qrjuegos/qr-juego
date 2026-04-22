@@ -61,7 +61,7 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
   const SYMBOLS = ['🍒','🌟','💎','🎯','🍀','🔔','🍋'];
   const [attempt, setAttempt] = useState(0);
   const [currentCard, setCurrentCard] = useState(() => Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
-  const [backendWon, setBackendWon] = useState<boolean|null>(null);
+  const [finalResult, setFinalResult] = useState<boolean|null>(null);
   const [revealedCount, setRevealedCount] = useState(0);
   const [revealing, setRevealing] = useState(false);
   const [showResult, setShowResult] = useState(false);
@@ -89,7 +89,7 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
   const handleNext = async () => {
     if (attempt >= attemptsPerSession - 1) {
       const won = await onSpin();
-      setBackendWon(won);
+      setFinalResult(won);
       if (won && !isMatch) {
         const winSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
         setCurrentCard([winSymbol, winSymbol, winSymbol]);
@@ -141,8 +141,8 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
         </div>
       )}
       {showResult && (
-        <div className={"text-center p-5 rounded-2xl " + (isMatch ? "bg-green-500/20 border-2 border-green-400/50" : attempt < attemptsPerSession - 1 ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/20")}>
-          {isMatch
+        <div className={"text-center p-5 rounded-2xl " + ((finalResult !== null ? finalResult : isMatch) ? "bg-green-500/20 border-2 border-green-400/50" : attempt < attemptsPerSession - 1 ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/20")}>
+          {(finalResult !== null ? finalResult : isMatch)
             ? <><p className="text-green-400 font-black text-2xl">🎉 ¡GANASTE!</p><p className="text-green-300/70 text-sm mt-1">¡Los 3 símbolos coinciden!</p></>
             : attempt < attemptsPerSession - 1
               ? <><p className="text-yellow-400 font-bold text-lg">😅 No coinciden</p><p className="text-white/50 text-xs mt-1">¡Te queda otro intento!</p></>
