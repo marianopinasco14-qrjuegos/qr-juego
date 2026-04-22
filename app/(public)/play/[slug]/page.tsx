@@ -505,6 +505,11 @@ export default function PlayPage() {
           </div>
           <RaffleFlow campaign={campaign} slug={slug as string}/>
         </div>
+        <footer className="text-center py-6 mt-4">
+  <a href="https://jugalo.app" target="_blank" rel="noopener noreferrer" className="text-white/20 text-xs hover:text-white/40 transition-colors">
+    Powered by jugalo.app
+  </a>
+</footer>
       </div>
     );
   }
@@ -617,7 +622,7 @@ export default function PlayPage() {
                 <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
                   <p className="text-white font-black text-xl">{prizeResult.prizeTitle}</p>
                   <div className="flex justify-center p-4 bg-white rounded-2xl">
-                    <QRCodeSVG value={`https://f7824ea4-c4f5-4005-b701-45221ce721dd-00-39q649e6veny.spock.replit.dev/staff/redeem/${prizeResult.redemptionCode}`} size={160} bgColor="white" fgColor="#111"/>
+                    <QRCodeSVG value={`https://jugalo.app/staff`} size={160} bgColor="white" fgColor="#111"/>
                   </div>
                   <div className="bg-black/30 rounded-xl px-4 py-3">
                     <p className="text-white/40 text-xs mb-1">Código de canje</p>
@@ -666,6 +671,11 @@ export default function PlayPage() {
           </div>
         )}
       </div>
+      <footer className="text-center py-6 mt-4">
+  <a href="https://jugalo.app" target="_blank" rel="noopener noreferrer" className="text-white/20 text-xs hover:text-white/40 transition-colors">
+    Powered by jugalo.app
+  </a>
+</footer>
     </div>
   );
 }
