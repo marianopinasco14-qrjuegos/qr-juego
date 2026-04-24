@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-const GAMES=[{id:"RASCA_Y_GANA",label:"Rasca y Gana",emoji:"🎫",desc:"Tarjeta táctil"},{id:"SLOTS",label:"Tragamonedas",emoji:"🎰",desc:"Tres rodillos"},{id:"SORTEO",label:"Sorteo",emoji:"🎲",desc:"Sorteo con fecha de cierre"},{id:"GLOBO",label:"Explota el Globo",emoji:"🎈",desc:"Explotá el globo y descubrí tu premio"}];
+const GAMES=[{id:"RASCA_Y_GANA",label:"Rasca y Gana",emoji:"🎫",desc:"Tarjeta táctil"},{id:"SLOTS",label:"Tragamonedas",emoji:"🎰",desc:"Tres rodillos"},{id:"SORTEO",label:"Sorteo",emoji:"🎲",desc:"Sorteo con fecha de cierre"},{id:"GLOBO",label:"Explota el Globo",emoji:"🎈",desc:"Explotá el globo y descubrí tu premio"},{id:"CAJA",label:"Abre la Caja",emoji:"📦",desc:"Elegí una caja y descubrí tu premio"}];
 export default function NewCampaignPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
