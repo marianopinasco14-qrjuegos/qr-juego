@@ -14,6 +14,7 @@ enum GameType {
   RASCA_Y_GANA
   SLOTS
   SORTEO
+  GLOBO
 }
 
 enum CampaignStatus {

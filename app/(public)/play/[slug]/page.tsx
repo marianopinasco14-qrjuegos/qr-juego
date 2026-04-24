@@ -318,6 +318,97 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
   );
 }
 
+function BalloonGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; hasConsolePrize: boolean }) {
+  const [phase, setPhase] = useState<'idle'|'exploding'|'fog'|'revealed'>('idle');
+  const [won, setWon] = useState(false);
+
+  const handleBalloonClick = async () => {
+    if (phase !== 'idle') return;
+    setPhase('exploding');
+    const spinPromise = onSpin();
+    setTimeout(async () => {
+      setPhase('fog');
+      const [result] = await Promise.all([spinPromise, new Promise<void>(r => setTimeout(r, 1500))]);
+      setWon(result);
+      setPhase('revealed');
+      if (result) {
+        setTimeout(() => confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors: [primaryColor, secondaryColor, '#ffffff', '#ffd700'] }), 200);
+        setTimeout(() => confetti({ particleCount: 100, spread: 70, origin: { y: 0.3 }, colors: [primaryColor, '#ffd700', '#ffffff'] }), 700);
+      }
+    }, 600);
+  };
+
+  return (
+    <div className="w-full space-y-6">
+      <style>{`
+        @keyframes balloonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+        @keyframes balloonPop{0%{transform:scale(1);opacity:1}60%{transform:scale(1.6);opacity:0.6}100%{transform:scale(0.1);opacity:0}}
+      `}</style>
+
+      <div className="text-center rounded-2xl p-4 mb-2" style={{background:`linear-gradient(135deg, ${primaryColor}22, ${primaryColor}11)`, border:`1px solid ${primaryColor}40`}}>
+        <p className="text-white font-black text-2xl mb-1">🎈 ¡Explotá el globo!</p>
+        <p className="text-white/50 text-xs mt-1">Tocá el globo para descubrir si ganaste</p>
+      </div>
+
+      <div className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center" style={{minHeight:'280px', background:`linear-gradient(135deg, ${primaryColor}15, ${secondaryColor}15)`, border:`1px solid ${primaryColor}30`}}>
+
+        {phase === 'idle' && (
+          <div className="flex flex-col items-center gap-5 py-6">
+            <button onClick={handleBalloonClick} className="focus:outline-none select-none"
+              style={{animation:'balloonFloat 2.5s ease-in-out infinite', filter:`drop-shadow(0 10px 30px ${primaryColor}90)`, fontSize:'9rem', lineHeight:1}}>
+              🎈
+            </button>
+            <p className="text-white/60 text-sm animate-pulse">¡Tocá el globo para descubrir tu premio!</p>
+          </div>
+        )}
+
+        {phase === 'exploding' && (
+          <div className="flex items-center justify-center py-6">
+            <span style={{fontSize:'9rem', lineHeight:1, animation:'balloonPop 0.6s ease-out forwards'}}>💥</span>
+          </div>
+        )}
+
+        {phase === 'fog' && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center"
+            style={{background:'rgba(210,215,230,0.95)', backdropFilter:'blur(16px)'}}>
+            <div className="w-10 h-10 rounded-full border-4 border-gray-400/50 border-t-gray-600 animate-spin mb-4"/>
+            <p className="text-gray-600 text-sm font-medium">Descubriendo tu resultado...</p>
+          </div>
+        )}
+
+        {phase === 'revealed' && (
+          <div className="flex flex-col items-center gap-4 py-8">
+            {won ? (
+              <>
+                <span style={{fontSize:'7rem', lineHeight:1}}>🏆</span>
+                <p className="text-green-400 font-black text-3xl tracking-tight">¡GANASTE!</p>
+                <p className="text-green-300/70 text-sm">¡Tu premio te espera!</p>
+              </>
+            ) : (
+              <>
+                <span style={{fontSize:'7rem', lineHeight:1}}>😔</span>
+                <p className="text-white font-black text-2xl">No fue esta vez</p>
+                {hasConsolePrize
+                  ? <p className="text-white/60 text-sm text-center px-4">¡Pero tenés un regalo esperándote!</p>
+                  : <p className="text-white/40 text-sm">¡Mejor suerte la próxima!</p>
+                }
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {phase === 'revealed' && (
+        <button onClick={() => onComplete(won)}
+          className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
+          style={{background: won ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
+          {won ? '🎁 Ver mi premio' : hasConsolePrize ? '🎁 Ver mi regalo' : '➡️ Finalizar'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function SlotsGame({ onSpin, onComplete, primaryColor, secondaryColor }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string }) {
   const SYMBOLS = ['🍒','⭐','💎','🎯','🍀','🔔','🍋'];
   const WINNER = '🍀';
@@ -671,7 +762,7 @@ export default function PlayPage() {
           ) : (
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-xl"
               style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
-              <span className="text-3xl">{campaign.gameType==="SLOTS"?"🎰":"🎫"}</span>
+              <span className="text-3xl">{campaign.gameType==="SLOTS"?"🎰":campaign.gameType==="GLOBO"?"🎈":"🎫"}</span>
             </div>
           )}
           <h1 className="text-white text-2xl font-black tracking-tight">{campaign.name}</h1>
@@ -685,7 +776,7 @@ export default function PlayPage() {
             <div className="rounded-2xl p-5 mb-2 text-center" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}22, ${campaign.secondaryColor}22)`, border:`1px solid ${campaign.primaryColor}40`}}>
               <p className="text-white font-black text-lg mb-1">🎯 ¿Cómo participar?</p>
               <p className="text-white/70 text-sm leading-relaxed">
-                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":"destapá las casillas y descubrí si ganaste"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
+                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":campaign.gameType==="GLOBO"?"explotá el globo y descubrí si ganaste":"raspá la tarjeta y descubrí si ganaste"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
               </p>
             </div>
             <form onSubmit={handleRegister} className="space-y-3">
@@ -749,6 +840,8 @@ export default function PlayPage() {
           <div className="flex flex-col items-center gap-5">
             {campaign.gameType==="SLOTS" ? (
               <SlotsGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onSpin={handleSpin} onComplete={handleScratchComplete}/>
+            ) : campaign.gameType==="GLOBO" ? (
+              <BalloonGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onSpin={handleSpin} onComplete={handleScratchComplete} hasConsolePrize={!!campaign.consolePrize}/>
             ) : (
               <ScratchCard primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} attemptsPerSession={campaign.attemptsPerSession} onSpin={handleSpin} onComplete={handleScratchComplete} winnerSymbol="🍀" hasConsolePrize={!!campaign.consolePrize}/>
             )}
