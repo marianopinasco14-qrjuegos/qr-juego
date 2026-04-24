@@ -60,7 +60,6 @@ function UpsellBar({ campaign }: { campaign: Campaign }) {
 function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string; hasConsolePrize: boolean }) {
   const SYMBOLS = ['🍒','🌟','💎','🎯','🍀','🔔','🍋'];
 
-  // Genera 3 símbolos garantizando que no sean los tres iguales
   const generateCard = () => {
     const r = Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]);
     if (r[0] === r[1] && r[1] === r[2]) r[2] = SYMBOLS[(SYMBOLS.indexOf(r[2]) + 1) % SYMBOLS.length];
@@ -68,49 +67,166 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
   };
 
   const [attempt, setAttempt] = useState(0);
-  const [currentCard, setCurrentCard] = useState(() => generateCard());
+  const [currentCard, setCurrentCard] = useState<string[]>(() => generateCard());
   const [finalResult, setFinalResult] = useState<boolean|null>(null);
-  const [revealedCount, setRevealedCount] = useState(0);
-  const [revealing, setRevealing] = useState(false);
-  const [showResult, setShowResult] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const [glowing, setGlowing] = useState(false);
-  const isMatch = currentCard[0] === currentCard[1] && currentCard[1] === currentCard[2];
+  const [loading, setLoading] = useState(false);
+
   const isLastAttempt = attempt >= attemptsPerSession - 1;
 
-  const handleReveal = async () => {
-    setRevealing(true);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawingRef = useRef(false);
+  const revealedRef = useRef(false);
+  const spinPromiseRef = useRef<Promise<boolean> | null>(null);
+  const spinCalledRef = useRef(false);
+  const isLastAttemptRef = useRef(isLastAttempt);
 
-    let wonResult: boolean | null = null;
+  // Keep isLastAttemptRef current on every render
+  useEffect(() => { isLastAttemptRef.current = isLastAttempt; });
 
-    if (isLastAttempt) {
-      // En el último intento: consultar servidor primero, luego animar
-      const won = await onSpin();
-      wonResult = won;
+  // Paint silver layer whenever the attempt changes
+  useEffect(() => {
+    revealedRef.current = false;
+    spinCalledRef.current = false;
+    spinPromiseRef.current = null;
+    setRevealed(false);
+    setGlowing(false);
+    setFinalResult(null);
+    setLoading(false);
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.globalCompositeOperation = 'source-over';
+    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    grad.addColorStop(0, '#d8d8d8');
+    grad.addColorStop(0.3, '#c8c8c8');
+    grad.addColorStop(0.5, '#efefef');
+    grad.addColorStop(0.7, '#c0c0c0');
+    grad.addColorStop(1, '#a8a8a8');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Noise texture
+    ctx.fillStyle = 'rgba(0,0,0,0.04)';
+    for (let i = 0; i < 300; i++) {
+      ctx.beginPath();
+      ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 1.5 + 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText('🪙  Raspá aquí', canvas.width / 2, canvas.height / 2 - 12);
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillText('Deslizá el dedo sobre la tarjeta', canvas.width / 2, canvas.height / 2 + 16);
+  }, [attempt]);
+
+  const getPos = (canvas: HTMLCanvasElement, e: { clientX: number; clientY: number }) => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  };
+
+  const revealCard = async () => {
+    if (revealedRef.current) return;
+    revealedRef.current = true;
+
+    // Clear canvas synchronously so user sees content immediately
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (isLastAttemptRef.current) {
+      setLoading(true);
+      const won = spinPromiseRef.current ? await spinPromiseRef.current : await onSpin();
+      setLoading(false);
       setFinalResult(won);
       if (won) {
         const winSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
         setCurrentCard([winSymbol, winSymbol, winSymbol]);
         setGlowing(true);
+        setTimeout(() => confetti({ particleCount: 180, spread: 90, origin: { y: 0.5 }, colors: [primaryColor, secondaryColor, '#ffffff', '#ffd700'] }), 200);
+        setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.4 }, colors: [primaryColor, secondaryColor, '#ffffff'] }), 600);
       } else {
         setCurrentCard(generateCard());
-        setGlowing(false);
       }
     }
 
-    setTimeout(() => setRevealedCount(1), 400);
-    setTimeout(() => setRevealedCount(2), 1400);
-    setTimeout(() => {
-      setRevealedCount(3);
-      setRevealing(false);
-      setTimeout(() => {
-        setShowResult(true);
-        if (wonResult === true) {
-          confetti({ particleCount: 180, spread: 90, origin: { y: 0.5 }, colors: [primaryColor, secondaryColor, '#ffffff', '#ffd700'] });
-          setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.4 }, colors: [primaryColor, secondaryColor, '#ffffff'] }), 400);
-        }
-      }, 300);
-    }, 2600);
+    setRevealed(true);
   };
+
+  const checkReveal = () => {
+    if (revealedRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let transparent = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 128) transparent++;
+    }
+    if (transparent / (data.length / 4) > 0.5) revealCard();
+  };
+
+  const scratch = (x: number, y: number) => {
+    if (revealedRef.current) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, 60, 0, Math.PI * 2);
+    ctx.fill();
+    checkReveal();
+  };
+
+  const startInteraction = (e: { clientX: number; clientY: number }) => {
+    if (revealedRef.current) return;
+    isDrawingRef.current = true;
+    if (isLastAttemptRef.current && !spinCalledRef.current) {
+      spinCalledRef.current = true;
+      spinPromiseRef.current = onSpin();
+    }
+    if (canvasRef.current) {
+      const p = getPos(canvasRef.current, e);
+      scratch(p.x, p.y);
+    }
+  };
+
+  const moveInteraction = (e: { clientX: number; clientY: number }) => {
+    if (!isDrawingRef.current || revealedRef.current) return;
+    if (canvasRef.current) {
+      const p = getPos(canvasRef.current, e);
+      scratch(p.x, p.y);
+    }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => startInteraction(e.nativeEvent);
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => moveInteraction(e.nativeEvent);
+  const handleMouseUp = () => { isDrawingRef.current = false; };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (e.touches[0]) startInteraction(e.touches[0]);
+  };
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (e.touches[0]) moveInteraction(e.touches[0]);
+  };
+  const handleTouchEnd = () => { isDrawingRef.current = false; };
 
   const handleNext = () => {
     if (isLastAttempt) {
@@ -118,10 +234,6 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
     } else {
       setAttempt(a => a + 1);
       setCurrentCard(generateCard());
-      setRevealedCount(0);
-      setRevealing(false);
-      setShowResult(false);
-      setGlowing(false);
     }
   };
 
@@ -130,33 +242,56 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
       <div className="text-center rounded-2xl p-4 mb-2" style={{background:`linear-gradient(135deg, ${primaryColor}22, ${primaryColor}11)`, border:`1px solid ${primaryColor}40`}}>
         <p className="text-white font-black text-2xl mb-1">🍀 🍀 🍀</p>
         <p className="text-white font-black text-base">¡3 iguales = GANASTE!</p>
-        <p className="text-white/50 text-xs mt-1">Destapá las 3 casillas y descubrí si ganaste</p>
+        <p className="text-white/50 text-xs mt-1">Raspá la tarjeta y descubrí si ganaste</p>
       </div>
-      <div className="flex gap-4 justify-center">
-        {currentCard.map((symbol, i) => (
-          <div key={i}
-            className="w-28 h-28 rounded-2xl border-2 flex items-center justify-center transition-all duration-500"
-            style={{
-              borderColor: revealedCount > i ? (glowing ? '#ffd700' : primaryColor) : 'rgba(255,255,255,0.15)',
-              background: revealedCount > i ? `linear-gradient(135deg, ${primaryColor}30, ${primaryColor}10)` : 'rgba(255,255,255,0.04)',
-              boxShadow: revealedCount > i && glowing ? `0 0 25px ${primaryColor}80, 0 0 50px ${primaryColor}40` : revealedCount > i ? `0 0 15px ${primaryColor}40` : 'none',
-              transform: revealedCount > i ? 'scale(1.05)' : 'scale(1)',
-            }}>
-            <span className={`text-6xl transition-all duration-500 ${revealedCount > i ? 'opacity-100 scale-110' : 'opacity-0 scale-50'}`}>
-              {revealedCount > i ? symbol : ''}
-            </span>
-            {revealedCount <= i && (
-              <span className="text-5xl opacity-30">🎴</span>
-            )}
-          </div>
-        ))}
-      </div>
-      {revealing && revealedCount < 3 && (
-        <div className="text-center">
-          <p className="text-white/50 text-sm animate-pulse">{'• '.repeat(revealedCount + 1).trim()}</p>
+
+      {/* Scratch card */}
+      <div className="relative mx-auto rounded-2xl overflow-hidden" style={{
+        width: '100%', maxWidth: '340px', height: '200px',
+        background: `linear-gradient(135deg, ${primaryColor}50, ${secondaryColor}50)`,
+        border: `2px solid ${glowing ? '#ffd700' : primaryColor + '60'}`,
+        boxShadow: glowing ? `0 0 30px #ffd70060, 0 0 60px ${primaryColor}40` : `0 0 20px ${primaryColor}20`,
+        transition: 'border-color 0.4s, box-shadow 0.4s',
+      }}>
+        {/* Content revealed under canvas */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {loading ? (
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-8 h-8 rounded-full border-4 border-white/30 border-t-white animate-spin"/>
+              <p className="text-white/50 text-xs">Verificando...</p>
+            </div>
+          ) : (
+            <div className="flex gap-5 justify-center">
+              {currentCard.map((symbol, i) => (
+                <span key={i} className="text-5xl select-none" style={{
+                  filter: glowing ? 'drop-shadow(0 0 10px #ffd700)' : 'none',
+                  transform: glowing ? 'scale(1.15)' : 'scale(1)',
+                  transition: 'all 0.3s',
+                }}>{symbol}</span>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      {showResult && (
+
+        {/* Canvas scratch overlay */}
+        <canvas
+          ref={canvasRef}
+          width={340}
+          height={200}
+          className="absolute inset-0 w-full h-full cursor-crosshair"
+          style={{display: revealed ? 'none' : 'block', touchAction: 'none'}}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        />
+      </div>
+
+      {/* Result message */}
+      {revealed && !loading && (
         <div className={"text-center p-5 rounded-2xl " + (finalResult !== null ? (finalResult ? "bg-green-500/20 border-2 border-green-400/50" : "bg-red-500/10 border border-red-500/20") : "bg-yellow-500/10 border border-yellow-500/30")}>
           {finalResult !== null
             ? finalResult
@@ -168,14 +303,9 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
           }
         </div>
       )}
+
       <div className="flex flex-col gap-3">
-        {revealedCount < 3 ? (
-          <button onClick={handleReveal} disabled={revealing}
-            className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95 disabled:opacity-40"
-            style={{background: revealing ? 'rgba(255,255,255,0.1)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-            {revealing ? <span className="animate-pulse">✨ Destapando...</span> : '✨ ¡Destapar!'}
-          </button>
-        ) : (
+        {revealed && !loading && (
           <button onClick={handleNext}
             className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
             style={{background: finalResult ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
