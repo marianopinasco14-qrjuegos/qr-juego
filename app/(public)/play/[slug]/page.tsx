@@ -59,17 +59,44 @@ function UpsellBar({ campaign }: { campaign: Campaign }) {
 
 function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attemptsPerSession, winnerSymbol, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; attemptsPerSession: number; winnerSymbol: string; hasConsolePrize: boolean }) {
   const SYMBOLS = ['🍒','🌟','💎','🎯','🍀','🔔','🍋'];
+
+  // Genera 3 símbolos garantizando que no sean los tres iguales
+  const generateCard = () => {
+    const r = Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]);
+    if (r[0] === r[1] && r[1] === r[2]) r[2] = SYMBOLS[(SYMBOLS.indexOf(r[2]) + 1) % SYMBOLS.length];
+    return r;
+  };
+
   const [attempt, setAttempt] = useState(0);
-  const [currentCard, setCurrentCard] = useState(() => Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
+  const [currentCard, setCurrentCard] = useState(() => generateCard());
   const [finalResult, setFinalResult] = useState<boolean|null>(null);
   const [revealedCount, setRevealedCount] = useState(0);
   const [revealing, setRevealing] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [glowing, setGlowing] = useState(false);
   const isMatch = currentCard[0] === currentCard[1] && currentCard[1] === currentCard[2];
+  const isLastAttempt = attempt >= attemptsPerSession - 1;
 
-  const handleReveal = () => {
+  const handleReveal = async () => {
     setRevealing(true);
+
+    let wonResult: boolean | null = null;
+
+    if (isLastAttempt) {
+      // En el último intento: consultar servidor primero, luego animar
+      const won = await onSpin();
+      wonResult = won;
+      setFinalResult(won);
+      if (won) {
+        const winSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+        setCurrentCard([winSymbol, winSymbol, winSymbol]);
+        setGlowing(true);
+      } else {
+        setCurrentCard(generateCard());
+        setGlowing(false);
+      }
+    }
+
     setTimeout(() => setRevealedCount(1), 400);
     setTimeout(() => setRevealedCount(2), 1400);
     setTimeout(() => {
@@ -77,8 +104,7 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
       setRevealing(false);
       setTimeout(() => {
         setShowResult(true);
-        if (currentCard[0] === currentCard[1] && currentCard[1] === currentCard[2]) {
-          setGlowing(true);
+        if (wonResult === true) {
           confetti({ particleCount: 180, spread: 90, origin: { y: 0.5 }, colors: [primaryColor, secondaryColor, '#ffffff', '#ffd700'] });
           setTimeout(() => confetti({ particleCount: 80, spread: 60, origin: { y: 0.4 }, colors: [primaryColor, secondaryColor, '#ffffff'] }), 400);
         }
@@ -86,22 +112,12 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
     }, 2600);
   };
 
-  const handleNext = async () => {
-    if (attempt >= attemptsPerSession - 1) {
-      const won = await onSpin();
-      setFinalResult(won);
-      if (won && !isMatch) {
-        const winSymbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-        setCurrentCard([winSymbol, winSymbol, winSymbol]);
-        setGlowing(true);
-      } else if (!won && isMatch) {
-        setCurrentCard([SYMBOLS[0], SYMBOLS[1], SYMBOLS[2]]);
-        setGlowing(false);
-      }
-      setTimeout(() => onComplete(won), won ? 1500 : 0);
+  const handleNext = () => {
+    if (isLastAttempt) {
+      setTimeout(() => onComplete(finalResult!), finalResult ? 1500 : 0);
     } else {
       setAttempt(a => a + 1);
-      setCurrentCard(Array.from({length: 3}, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]));
+      setCurrentCard(generateCard());
       setRevealedCount(0);
       setRevealing(false);
       setShowResult(false);
@@ -141,14 +157,14 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
         </div>
       )}
       {showResult && (
-        <div className={"text-center p-5 rounded-2xl " + ((finalResult !== null ? finalResult : isMatch) ? "bg-green-500/20 border-2 border-green-400/50" : attempt < attemptsPerSession - 1 ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/20")}>
-          {(finalResult !== null ? finalResult : isMatch)
-            ? <><p className="text-green-400 font-black text-2xl">🎉 ¡GANASTE!</p><p className="text-green-300/70 text-sm mt-1">¡Los 3 símbolos coinciden!</p></>
-            : attempt < attemptsPerSession - 1
-              ? <><p className="text-yellow-400 font-bold text-lg">😅 No coinciden</p><p className="text-white/50 text-xs mt-1">¡Te queda otro intento!</p></>
+        <div className={"text-center p-5 rounded-2xl " + (finalResult !== null ? (finalResult ? "bg-green-500/20 border-2 border-green-400/50" : "bg-red-500/10 border border-red-500/20") : "bg-yellow-500/10 border border-yellow-500/30")}>
+          {finalResult !== null
+            ? finalResult
+              ? <><p className="text-green-400 font-black text-2xl">🎉 ¡GANASTE!</p><p className="text-green-300/70 text-sm mt-1">¡Los 3 símbolos coinciden!</p></>
               : hasConsolePrize
                 ? <><p className="text-white font-bold text-lg">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">Pero no te vayas — ¡tenés un regalo esperándote!</p></>
                 : <><p className="text-white font-bold text-lg">😔 No fue esta vez</p><p className="text-white/50 text-xs mt-1">¡Mejor suerte la próxima!</p></>
+            : <><p className="text-yellow-400 font-bold text-lg">😅 No coinciden</p><p className="text-white/50 text-xs mt-1">¡Te queda otro intento!</p></>
           }
         </div>
       )}
@@ -162,8 +178,8 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
         ) : (
           <button onClick={handleNext}
             className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
-            style={{background: isMatch ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
-            {isMatch ? '🎁 Ver mi premio' : attempt >= attemptsPerSession - 1 ? hasConsolePrize ? '🎁 Ver mi regalo' : '➡️ Finalizar' : '🎴 Siguiente tarjeta'}
+            style={{background: finalResult ? 'linear-gradient(135deg, #16a34a, #15803d)' : `linear-gradient(135deg, ${primaryColor}, ${secondaryColor})`}}>
+            {finalResult ? '🎁 Ver mi premio' : isLastAttempt ? hasConsolePrize ? '🎁 Ver mi regalo' : '➡️ Finalizar' : '🎴 Siguiente tarjeta'}
           </button>
         )}
         <p className="text-white/30 text-xs text-center">Intento {attempt + 1} de {attemptsPerSession}</p>
@@ -194,7 +210,7 @@ function SlotsGame({ onSpin, onComplete, primaryColor, secondaryColor }: { onSpi
     const isWin = await onSpin();
     const final = isWin ? [WINNER,WINNER,WINNER] : (() => {
       const r = Array.from({length:3}, () => SYMBOLS[Math.floor(Math.random()*SYMBOLS.length)]);
-      if (r[0]===r[1] && r[1]===r[2]) r[2] = '🍒';
+      if (r[0]===r[1] && r[1]===r[2]) r[2] = SYMBOLS[(SYMBOLS.indexOf(r[0]) + 1) % SYMBOLS.length];
       return r;
     })();
     finalReelsRef.current = final;
