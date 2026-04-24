@@ -344,8 +344,11 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
   return (
     <div className="w-full space-y-6">
       <style>{`
-        @keyframes boxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-        @keyframes boxOpen{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1.1)}}
+        @keyframes lidOpen{0%{transform:translateY(0);opacity:1}15%{transform:translateY(-8%) scaleX(1.05);opacity:0.9}100%{transform:translateY(-130%);opacity:0}}
+        @keyframes boxGlow{0%,100%{box-shadow:0 0 24px #ffd70070,0 0 48px #ffd70030}50%{box-shadow:0 0 48px #ffd700b0,0 0 96px #ffd70060}}
+        @keyframes floatWin{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.2)}}
+        @keyframes boxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+        .gift-box:not(:disabled):hover{transform:translateY(-5px) scale(1.04)!important;transition:transform 0.18s ease,box-shadow 0.18s ease!important}
       `}</style>
 
       <div className="text-center rounded-2xl p-4 mb-2" style={{background:`linear-gradient(135deg, ${primaryColor}22, ${primaryColor}11)`, border:`1px solid ${primaryColor}40`}}>
@@ -358,25 +361,78 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
           const isSelected = selected === i;
           const isDimmed = selected !== null && !isSelected;
           const isShaking = isSelected && opening;
-          const isOpen = isSelected && !opening && revealed;
+          const isOpen = isSelected && revealed;
 
           return (
-            <button key={i} onClick={() => handleBoxClick(i)} disabled={selected !== null}
-              className="aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 transition-all duration-300 focus:outline-none"
+            <button
+              key={i}
+              onClick={() => handleBoxClick(i)}
+              disabled={selected !== null}
+              className="gift-box relative focus:outline-none rounded-2xl overflow-hidden"
               style={{
-                background: isSelected
-                  ? `linear-gradient(135deg, ${primaryColor}60, ${secondaryColor}40)`
-                  : `linear-gradient(135deg, ${primaryColor}20, ${primaryColor}10)`,
-                border: `2px solid ${isSelected ? primaryColor : primaryColor + '40'}`,
-                boxShadow: isSelected ? `0 0 20px ${primaryColor}60` : 'none',
-                opacity: isDimmed ? 0.3 : 1,
-                transform: isShaking ? undefined : isOpen ? 'scale(1.08)' : undefined,
-                animation: isShaking ? 'boxShake 0.4s ease-in-out, boxOpen 0.5s 0.4s ease-out forwards' : undefined,
+                aspectRatio: '3/4',
+                transform: isDimmed ? 'scale(0.88)' : undefined,
+                opacity: isDimmed ? 0.22 : 1,
+                boxShadow: isOpen && won
+                  ? undefined
+                  : isSelected
+                    ? `0 8px 28px ${primaryColor}70, 0 0 0 2px ${primaryColor}`
+                    : `0 4px 14px ${primaryColor}30, 0 0 0 1.5px ${primaryColor}40`,
+                animation: isOpen && won
+                  ? 'boxGlow 2s ease-in-out infinite'
+                  : isShaking
+                    ? 'boxShake 0.35s ease-in-out'
+                    : undefined,
+                transition: isDimmed ? 'all 0.4s ease' : 'box-shadow 0.25s ease, opacity 0.3s ease',
+                cursor: selected !== null ? 'default' : 'pointer',
+              }}
+            >
+              {/* Body */}
+              <div className="absolute inset-0" style={{
+                background: isOpen && won
+                  ? 'linear-gradient(170deg, #7a5500, #c49000, #f0c800)'
+                  : isOpen
+                    ? 'linear-gradient(170deg, #0d0d1a, #1c1c35)'
+                    : `linear-gradient(170deg, ${primaryColor}ff, ${primaryColor}bb)`,
+                transition: 'background 0.5s ease',
               }}>
-              <span style={{fontSize:'2.5rem', lineHeight:1, transition:'all 0.4s'}}>
-                {isOpen ? (won ? '🏆' : '😔') : isSelected && !opening && !revealed ? '🎁' : '📦'}
-              </span>
-              {!isSelected && <span className="text-white/40 text-xs font-bold">{i + 1}</span>}
+                {/* Vertical ribbon on body */}
+                <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)'}}/>
+                {/* Body content */}
+                <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'26%'}}>
+                  {isOpen ? (
+                    <span style={{fontSize:'2.1rem', lineHeight:1, animation: won ? 'floatWin 1.6s ease-in-out infinite' : undefined}}>
+                      {won ? '🏆' : '😔'}
+                    </span>
+                  ) : (
+                    <span style={{fontSize:'1.5rem', fontWeight:900, color:'rgba(255,255,255,0.28)', userSelect:'none'}}>
+                      {i + 1}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Lid */}
+              <div style={{
+                position:'absolute', top:0, left:0, right:0, height:'28%',
+                background:`linear-gradient(160deg, ${secondaryColor}f0, ${secondaryColor}c0)`,
+                transformOrigin:'top center',
+                animation: isShaking ? 'lidOpen 0.65s 0.25s ease-in forwards' : undefined,
+                zIndex:2,
+              }}>
+                {/* Horizontal ribbon at lid base */}
+                <div style={{position:'absolute', bottom:0, left:0, right:0, height:'5px', background:'rgba(255,215,0,0.82)'}}/>
+                {/* Vertical ribbon on lid */}
+                <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)'}}/>
+                {/* Lid sheen */}
+                <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%)'}}/>
+              </div>
+
+              {/* Full-height vertical ribbon (visible over lid+body) */}
+              <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)', zIndex:3, pointerEvents:'none'}}/>
+
+              {/* Box sheen */}
+              <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(255,255,255,0.13) 0%, transparent 52%)', zIndex:4, pointerEvents:'none'}}/>
             </button>
           );
         })}
