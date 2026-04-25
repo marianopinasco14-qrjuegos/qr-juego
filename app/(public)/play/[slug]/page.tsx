@@ -370,7 +370,7 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
               disabled={selected !== null}
               className="gift-box relative focus:outline-none rounded-2xl overflow-hidden"
               style={{
-                aspectRatio: '3/4',
+                aspectRatio: '1/1',
                 transform: isDimmed ? 'scale(0.88)' : undefined,
                 opacity: isDimmed ? 0.22 : 1,
                 boxShadow: isOpen && won
@@ -399,13 +399,13 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
                 {/* Vertical ribbon on body */}
                 <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)'}}/>
                 {/* Body content */}
-                <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'26%'}}>
+                <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'22%'}}>
                   {isOpen ? (
-                    <span style={{fontSize:'2.1rem', lineHeight:1, animation: won ? 'floatWin 1.6s ease-in-out infinite' : undefined}}>
+                    <span style={{fontSize:'2.4rem', lineHeight:1, animation: won ? 'floatWin 1.6s ease-in-out infinite' : undefined}}>
                       {won ? '🏆' : '😔'}
                     </span>
                   ) : (
-                    <span style={{fontSize:'1.5rem', fontWeight:900, color:'rgba(255,255,255,0.28)', userSelect:'none'}}>
+                    <span style={{fontSize:'1.8rem', fontWeight:900, color:'rgba(255,255,255,0.28)', userSelect:'none'}}>
                       {i + 1}
                     </span>
                   )}
@@ -414,7 +414,7 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
 
               {/* Lid */}
               <div style={{
-                position:'absolute', top:0, left:0, right:0, height:'28%',
+                position:'absolute', top:0, left:0, right:0, height:'22%',
                 background:`linear-gradient(160deg, ${secondaryColor}f0, ${secondaryColor}c0)`,
                 transformOrigin:'top center',
                 animation: isShaking ? 'lidOpen 0.65s 0.25s ease-in forwards' : undefined,
