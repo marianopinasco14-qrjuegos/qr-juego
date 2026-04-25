@@ -318,6 +318,15 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
   );
 }
 
+const BOX_COLORS = [
+  {body:'#7C3AED', lid:'#5B21B6', ribbon:'#A78BFA'},
+  {body:'#DC2626', lid:'#991B1B', ribbon:'#FCA5A5'},
+  {body:'#16A34A', lid:'#15803D', ribbon:'#86EFAC'},
+  {body:'#EA580C', lid:'#C2410C', ribbon:'#FED7AA'},
+  {body:'#DB2777', lid:'#9D174D', ribbon:'#FBCFE8'},
+  {body:'#2563EB', lid:'#1D4ED8', ribbon:'#93C5FD'},
+];
+
 function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; hasConsolePrize: boolean }) {
   const [selected, setSelected] = useState<number|null>(null);
   const [opening, setOpening] = useState(false);
@@ -344,7 +353,7 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
   return (
     <div className="w-full space-y-6">
       <style>{`
-        @keyframes lidOpen{0%{transform:translateY(0);opacity:1}15%{transform:translateY(-8%) scaleX(1.05);opacity:0.9}100%{transform:translateY(-130%);opacity:0}}
+        @keyframes lidOpen{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-150%);opacity:0}}
         @keyframes boxGlow{0%,100%{box-shadow:0 0 24px #ffd70070,0 0 48px #ffd70030}50%{box-shadow:0 0 48px #ffd700b0,0 0 96px #ffd70060}}
         @keyframes floatWin{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.2)}}
         @keyframes boxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
@@ -388,51 +397,65 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
               }}
             >
               {/* Body */}
-              <div className="absolute inset-0" style={{
-                background: isOpen && won
-                  ? 'linear-gradient(170deg, #7a5500, #c49000, #f0c800)'
-                  : isOpen
-                    ? 'linear-gradient(170deg, #0d0d1a, #1c1c35)'
-                    : `linear-gradient(170deg, ${primaryColor}ff, ${primaryColor}bb)`,
-                transition: 'background 0.5s ease',
-              }}>
-                {/* Vertical ribbon on body */}
-                <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)'}}/>
-                {/* Body content */}
-                <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'22%'}}>
-                  {isOpen ? (
-                    <span style={{fontSize:'2.4rem', lineHeight:1, animation: won ? 'floatWin 1.6s ease-in-out infinite' : undefined}}>
-                      {won ? '🏆' : '😔'}
-                    </span>
-                  ) : (
-                    <span style={{fontSize:'1.8rem', fontWeight:900, color:'rgba(255,255,255,0.28)', userSelect:'none'}}>
-                      {i + 1}
-                    </span>
+              {(() => {
+                const c = BOX_COLORS[i];
+                return (<>
+                  <div className="absolute inset-0" style={{
+                    background: isOpen && won
+                      ? 'linear-gradient(180deg, #f0c800, #c49000)'
+                      : isOpen
+                        ? 'linear-gradient(180deg, #1c1c35, #0d0d1a)'
+                        : `linear-gradient(180deg, ${c.body}dd, ${c.body})`,
+                    transition: 'background 0.5s ease',
+                  }}>
+                    {/* Body sheen diagonal */}
+                    <div style={{position:'absolute', inset:0, background:'linear-gradient(45deg, rgba(255,255,255,0.15) 0%, transparent 50%)', pointerEvents:'none'}}/>
+                    {/* Vertical ribbon on body */}
+                    <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'10px', background:c.ribbon, transform:'translateX(-50%)', boxShadow:`0 0 6px ${c.ribbon}80`, pointerEvents:'none'}}/>
+                    {/* Body content */}
+                    <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'30%'}}>
+                      {isOpen ? (
+                        <span style={{fontSize:'2.8rem', lineHeight:1, animation: won ? 'floatWin 1.6s ease-in-out infinite' : undefined}}>
+                          {won ? '🏆' : '😔'}
+                        </span>
+                      ) : (
+                        <span style={{fontSize:'1.4rem', fontWeight:900, color:'rgba(255,255,255,0.4)', userSelect:'none' as const}}>
+                          {i + 1}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Lid */}
+                  {!isOpen && (
+                    <div style={{
+                      position:'absolute', top:0, left:0, right:0, height:'32%',
+                      background: c.lid,
+                      borderBottom: `3px solid ${c.ribbon}`,
+                      transformOrigin:'top center',
+                      animation: isShaking ? 'lidOpen 0.6s ease-in forwards' : undefined,
+                      zIndex:2,
+                    }}>
+                      <div style={{position:'absolute', inset:0, background:'linear-gradient(45deg, rgba(255,255,255,0.25) 0%, transparent 50%)'}}/>
+                    </div>
                   )}
-                </div>
-              </div>
 
-              {/* Lid */}
-              <div style={{
-                position:'absolute', top:0, left:0, right:0, height:'22%',
-                background:`linear-gradient(160deg, ${secondaryColor}f0, ${secondaryColor}c0)`,
-                transformOrigin:'top center',
-                animation: isShaking ? 'lidOpen 0.65s 0.25s ease-in forwards' : undefined,
-                zIndex:2,
-              }}>
-                {/* Horizontal ribbon at lid base */}
-                <div style={{position:'absolute', bottom:0, left:0, right:0, height:'5px', background:'rgba(255,215,0,0.82)'}}/>
-                {/* Vertical ribbon on lid */}
-                <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)'}}/>
-                {/* Lid sheen */}
-                <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%)'}}/>
-              </div>
+                  {/* Horizontal ribbon on lid */}
+                  {!isOpen && (
+                    <div style={{position:'absolute', top:'16%', left:0, right:0, height:'10px', background:c.ribbon, boxShadow:`0 0 6px ${c.ribbon}80`, zIndex:3, pointerEvents:'none'}}/>
+                  )}
 
-              {/* Full-height vertical ribbon (visible over lid+body) */}
-              <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'6px', background:'rgba(255,215,0,0.75)', transform:'translateX(-50%)', zIndex:3, pointerEvents:'none'}}/>
+                  {/* Full-height vertical ribbon overlay */}
+                  {!isOpen && (
+                    <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'10px', background:c.ribbon, transform:'translateX(-50%)', boxShadow:`0 0 6px ${c.ribbon}80`, zIndex:5, pointerEvents:'none'}}/>
+                  )}
 
-              {/* Box sheen */}
-              <div style={{position:'absolute', inset:0, background:'linear-gradient(135deg, rgba(255,255,255,0.13) 0%, transparent 52%)', zIndex:4, pointerEvents:'none'}}/>
+                  {/* Bow */}
+                  {!isOpen && (
+                    <div style={{position:'absolute', top:'28%', left:'50%', transform:'translate(-50%, -50%)', fontSize:'1.4rem', lineHeight:1, filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.5))', zIndex:6, pointerEvents:'none'}}>🎀</div>
+                  )}
+                </>);
+              })()}
             </button>
           );
         })}
