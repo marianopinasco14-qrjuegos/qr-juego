@@ -446,11 +446,15 @@ function NumberGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConso
 }
 
 function BalloonGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; hasConsolePrize: boolean }) {
+  const BALLOON_COLORS = ['#FF4D4D','#FF9F1C','#A8E063','#4ECDC4','#845EC2'];
+  const BALLOON_EMOJIS = ['🔴','🟠','🟢','🔵','🟣'];
   const [phase, setPhase] = useState<'idle'|'exploding'|'fog'|'revealed'>('idle');
+  const [selectedIdx, setSelectedIdx] = useState<number|null>(null);
   const [won, setWon] = useState(false);
 
-  const handleBalloonClick = async () => {
+  const handleBalloonClick = async (idx: number) => {
     if (phase !== 'idle') return;
+    setSelectedIdx(idx);
     setPhase('exploding');
     const spinPromise = onSpin();
     setTimeout(async () => {
@@ -468,33 +472,75 @@ function BalloonGame({ onSpin, onComplete, primaryColor, secondaryColor, hasCons
   return (
     <div className="w-full space-y-6">
       <style>{`
-        @keyframes balloonFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
-        @keyframes balloonPop{0%{transform:scale(1);opacity:1}60%{transform:scale(1.6);opacity:0.6}100%{transform:scale(0.1);opacity:0}}
+        @keyframes balloonFloat0{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-18px) rotate(-3deg)}}
+        @keyframes balloonFloat1{0%,100%{transform:translateY(0) rotate(2deg)}50%{transform:translateY(-14px) rotate(2deg)}}
+        @keyframes balloonFloat2{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-20px) rotate(0deg)}}
+        @keyframes balloonFloat3{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(-2deg)}}
+        @keyframes balloonFloat4{0%,100%{transform:translateY(0) rotate(3deg)}50%{transform:translateY(-16px) rotate(3deg)}}
+        @keyframes balloonPop{0%{transform:scale(1);opacity:1}60%{transform:scale(1.8);opacity:0.6}100%{transform:scale(0.1);opacity:0}}
+        @keyframes balloonShake{0%,100%{transform:scale(1.1)}50%{transform:scale(1.15)}}
       `}</style>
-
       <div className="text-center rounded-2xl p-4 mb-2" style={{background:`linear-gradient(135deg, ${primaryColor}22, ${primaryColor}11)`, border:`1px solid ${primaryColor}40`}}>
-        <p className="text-white font-black text-2xl mb-1">🎈 ¡Explotá el globo!</p>
-        <p className="text-white/50 text-xs mt-1">Tocá el globo para descubrir si ganaste</p>
+        <p className="text-white font-black text-2xl mb-1">🎈 ¡Elegí un globo!</p>
+        <p className="text-white/50 text-xs mt-1">Tocá uno de los globos para descubrir si ganaste</p>
       </div>
-
       <div className="relative rounded-2xl overflow-hidden flex flex-col items-center justify-center" style={{minHeight:'280px', background:`linear-gradient(135deg, ${primaryColor}15, ${secondaryColor}15)`, border:`1px solid ${primaryColor}30`}}>
-
         {phase === 'idle' && (
-          <div className="flex flex-col items-center gap-5 py-6">
-            <button onClick={handleBalloonClick} className="focus:outline-none select-none"
-              style={{animation:'balloonFloat 2.5s ease-in-out infinite', filter:`drop-shadow(0 10px 30px ${primaryColor}90)`, fontSize:'9rem', lineHeight:1}}>
-              🎈
-            </button>
-            <p className="text-white/60 text-sm animate-pulse">¡Tocá el globo para descubrir tu premio!</p>
+          <div className="flex flex-col items-center gap-4 py-6 w-full">
+            <div className="flex items-end justify-center gap-3 px-4 w-full">
+              {BALLOON_COLORS.map((color, idx) => (
+                <button key={idx} onClick={() => handleBalloonClick(idx)}
+                  className="focus:outline-none select-none flex flex-col items-center hover:scale-110 transition-transform"
+                  style={{animation:`balloonFloat${idx} ${2.2 + idx * 0.3}s ease-in-out infinite`}}>
+                  <div style={{
+                    width: idx === 2 ? '64px' : '52px',
+                    height: idx === 2 ? '80px' : '65px',
+                    borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+                    background: `radial-gradient(circle at 35% 35%, ${color}dd, ${color}88)`,
+                    boxShadow: `0 8px 24px ${color}66, inset 0 -4px 8px rgba(0,0,0,0.15), inset 4px 4px 8px rgba(255,255,255,0.3)`,
+                    position: 'relative',
+                    cursor: 'pointer',
+                  }}>
+                    <div style={{
+                      position:'absolute', top:'20%', left:'25%',
+                      width:'22%', height:'18%',
+                      borderRadius:'50%',
+                      background:'rgba(255,255,255,0.6)',
+                    }}/>
+                  </div>
+                  <div style={{width:'2px', height:'24px', background:`${color}88`, marginTop:'-2px'}}/>
+                </button>
+              ))}
+            </div>
+            <p className="text-white/60 text-sm animate-pulse mt-2">¡Tocá un globo para descubrir tu premio!</p>
           </div>
         )}
-
         {phase === 'exploding' && (
-          <div className="flex items-center justify-center py-6">
-            <span style={{fontSize:'9rem', lineHeight:1, animation:'balloonPop 0.6s ease-out forwards'}}>💥</span>
+          <div className="flex items-end justify-center gap-3 px-4 py-6 w-full">
+            {BALLOON_COLORS.map((color, idx) => (
+              <div key={idx} className="flex flex-col items-center">
+                {idx === selectedIdx ? (
+                  <div style={{
+                    width:'64px', height:'80px',
+                    borderRadius:'50% 50% 50% 50% / 60% 60% 40% 40%',
+                    background:`radial-gradient(circle at 35% 35%, ${color}dd, ${color}88)`,
+                    animation:'balloonPop 0.6s ease-out forwards',
+                    fontSize:'2rem', display:'flex', alignItems:'center', justifyContent:'center'
+                  }}>💥</div>
+                ) : (
+                  <div style={{
+                    width: idx === 2 ? '64px' : '52px',
+                    height: idx === 2 ? '80px' : '65px',
+                    borderRadius:'50% 50% 50% 50% / 60% 60% 40% 40%',
+                    background:`radial-gradient(circle at 35% 35%, ${color}dd, ${color}88)`,
+                    opacity: 0.4,
+                  }}/>
+                )}
+                <div style={{width:'2px', height:'24px', background:`${color}88`}}/>
+              </div>
+            ))}
           </div>
         )}
-
         {phase === 'fog' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center"
             style={{background:'rgba(210,215,230,0.95)', backdropFilter:'blur(16px)'}}>
@@ -502,7 +548,6 @@ function BalloonGame({ onSpin, onComplete, primaryColor, secondaryColor, hasCons
             <p className="text-gray-600 text-sm font-medium">Descubriendo tu resultado...</p>
           </div>
         )}
-
         {phase === 'revealed' && (
           <div className="flex flex-col items-center gap-4 py-8">
             {won ? (
@@ -524,7 +569,6 @@ function BalloonGame({ onSpin, onComplete, primaryColor, secondaryColor, hasCons
           </div>
         )}
       </div>
-
       {phase === 'revealed' && (
         <button onClick={() => onComplete(won)}
           className="w-full py-5 rounded-2xl font-black text-white text-xl shadow-2xl transition-all active:scale-95"
