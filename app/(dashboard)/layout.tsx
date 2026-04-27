@@ -13,8 +13,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-lg">🎯</div>
-              <div><p className="text-white font-bold text-sm">QR Juego</p><p className="text-white/40 text-xs truncate">{(session.user as any).email}</p></div>
+              <img src="/jugalo-square-dark.svg" alt="jugalo" className="w-10 h-10" />
+              <div><p className="text-white font-bold text-sm">jugalo</p><p className="text-white/40 text-xs truncate">{(session.user as any).email}</p></div>
             </div>
             <AlertsBell />
           </div>

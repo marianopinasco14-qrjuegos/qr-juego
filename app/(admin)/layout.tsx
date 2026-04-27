@@ -24,8 +24,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Sidebar */}
       <aside className="w-56 bg-[#1a1a2e] border-r border-white/10 flex flex-col">
         <div className="p-4 border-b border-white/10">
-          <div className="text-lg font-bold">⚡ Superadmin</div>
-          <div className="text-xs text-gray-500 mt-0.5">{payload.email}</div>
+          <img src="/jugalo-square-dark.svg" alt="jugalo" className="w-8 h-8 mb-2" />
+          <div className="text-sm font-bold text-white">jugalo</div>
+          <div className="text-xs text-gray-500">Superadmin · {payload.email}</div>
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {navItems.map((item) => (

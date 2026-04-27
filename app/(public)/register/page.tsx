@@ -72,9 +72,8 @@ function RegisterPageInner() {
     <div className="min-h-screen bg-[#0f0f1a] text-white">
       {/* Hero */}
       <div className="bg-gradient-to-br from-purple-900/40 to-[#0f0f1a] py-12 px-4 text-center">
-        <div className="text-4xl mb-3">🎰</div>
-        <h1 className="text-3xl font-bold mb-2">QR Juego</h1>
-        <p className="text-gray-400 text-lg">Empieza gratis — 14 días de trial sin tarjeta</p>
+        <img src="/jugalo-logo-dark.svg" alt="jugalo" className="h-12 mx-auto mb-4" />
+        <p className="text-gray-400 text-lg">Empezá gratis — 14 días de trial sin tarjeta</p>
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-2 gap-10">

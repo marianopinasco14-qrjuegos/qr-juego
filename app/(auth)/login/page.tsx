@@ -27,9 +27,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-5xl mb-3">🎰</div>
-          <h1 className="text-white text-2xl font-bold">QR Juego</h1>
-          <p className="text-white/50 text-sm mt-1">Dashboard</p>
+          <img src="/jugalo-logo-dark.svg" alt="jugalo" className="h-12 mx-auto mb-4" />
+          <p className="text-white/50 text-sm mt-1">Ingresá a tu cuenta</p>
         </div>
 
         {/* Google OAuth */}
