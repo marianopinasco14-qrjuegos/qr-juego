@@ -124,10 +124,16 @@ export async function sendTrialEndingEmail(params: { toEmail: string; toName: st
     <div style="background:#fffbeb;border-radius:12px;padding:20px;margin:20px 0;border-left:4px solid #f59e0b;">
       <p style="color:#92400e;font-weight:bold;margin:0;font-size:15px;">⚡ Quedan ${params.daysLeft} días para elegir tu plan</p>
     </div>
-    <div style="text-align:center;margin:24px 0;">
-      <a href="${appUrl}/settings" style="background:#f59e0b;color:white;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:bold;font-size:15px;display:inline-block;">Ver planes →</a>
+    <div style="background:#f9f9f9;border-radius:12px;padding:20px;margin:20px 0;">
+      <p style="color:#333;font-weight:bold;margin:0 0 12px;">¿Qué perdés si no elegís un plan?</p>
+      <p style="color:#666;margin:4px 0;font-size:14px;">❌ Tus campañas activas se pausarán</p>
+      <p style="color:#666;margin:4px 0;font-size:14px;">❌ Tus leads y datos quedarán inaccesibles</p>
+      <p style="color:#666;margin:4px 0;font-size:14px;">❌ Tus clientes no podrán participar en tus juegos</p>
     </div>
-    <p style="color:#999;font-size:13px;text-align:center;">Si no elegís un plan, perderás acceso a tus campañas activas.</p>
+    <div style="text-align:center;margin:24px 0;">
+      <a href="${appUrl}/settings" style="background:#f59e0b;color:white;text-decoration:none;padding:16px 40px;border-radius:10px;font-weight:bold;font-size:16px;display:inline-block;">Ver planes y precios →</a>
+    </div>
+    <p style="color:#999;font-size:13px;text-align:center;">Si ya elegiste un plan, ignorá este mensaje.</p>
   </div>
 </div></body></html>`;
     await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `⏰ Tu trial vence en ${params.daysLeft} días — Elegí tu plan`, html });
