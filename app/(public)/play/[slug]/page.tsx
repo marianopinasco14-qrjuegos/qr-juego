@@ -318,22 +318,15 @@ function ScratchCard({ onSpin, onComplete, primaryColor, secondaryColor, attempt
   );
 }
 
-const BOX_COLORS = [
-  {body:'#7C3AED', lid:'#5B21B6', ribbon:'#A78BFA'},
-  {body:'#DC2626', lid:'#991B1B', ribbon:'#FCA5A5'},
-  {body:'#16A34A', lid:'#15803D', ribbon:'#86EFAC'},
-  {body:'#EA580C', lid:'#C2410C', ribbon:'#FED7AA'},
-  {body:'#DB2777', lid:'#9D174D', ribbon:'#FBCFE8'},
-  {body:'#2563EB', lid:'#1D4ED8', ribbon:'#93C5FD'},
-];
+const NUMBER_COLORS = ['#F59E0B','#EF4444','#10B981','#3B82F6','#8B5CF6','#F97316','#EC4899','#14B8A6','#6366F1'];
 
-function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; hasConsolePrize: boolean }) {
+function NumberGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsolePrize }: { onSpin: () => Promise<boolean>; onComplete: (won: boolean) => void; primaryColor: string; secondaryColor: string; hasConsolePrize: boolean }) {
   const [selected, setSelected] = useState<number|null>(null);
   const [opening, setOpening] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [won, setWon] = useState(false);
 
-  const handleBoxClick = async (idx: number) => {
+  const handleNumberClick = async (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
     setOpening(true);
@@ -353,121 +346,80 @@ function BoxGame({ onSpin, onComplete, primaryColor, secondaryColor, hasConsoleP
   return (
     <div className="w-full space-y-6">
       <style>{`
-        @keyframes lidOpen{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-150%);opacity:0}}
-        @keyframes boxGlow{0%,100%{box-shadow:0 0 24px #ffd70070,0 0 48px #ffd70030}50%{box-shadow:0 0 48px #ffd700b0,0 0 96px #ffd70060}}
-        @keyframes floatWin{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.2)}}
-        @keyframes boxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-        .gift-box:not(:disabled):hover{transform:translateY(-5px) scale(1.04)!important;transition:transform 0.18s ease,box-shadow 0.18s ease!important}
+        @keyframes numberPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+        @keyframes numberWin{0%{transform:scale(1)}40%{transform:scale(1.35)}70%{transform:scale(1.2)}100%{transform:scale(1.25)}}
+        @keyframes numberFloat{0%,100%{transform:translateY(0) scale(1.25)}50%{transform:translateY(-6px) scale(1.3)}}
+        @keyframes numGlow{0%,100%{box-shadow:0 0 24px #ffd70070,0 0 48px #ffd70030}50%{box-shadow:0 0 48px #ffd700b0,0 0 96px #ffd70060}}
+        .num-btn:not(:disabled):hover{transform:translateY(-6px) scale(1.08)!important;transition:transform 0.15s ease,box-shadow 0.15s ease!important}
       `}</style>
 
       <div className="text-center rounded-2xl p-4 mb-2" style={{background:`linear-gradient(135deg, ${primaryColor}22, ${primaryColor}11)`, border:`1px solid ${primaryColor}40`}}>
-        <p className="text-white font-black text-2xl mb-1">📦 ¡Abre la Caja!</p>
-        <p className="text-white/50 text-xs mt-1">Elegí una caja para descubrir tu premio</p>
+        <p className="text-white font-black text-2xl mb-1">🔢 ¡Elegí tu número!</p>
+        <p className="text-white/50 text-xs mt-1">Tocá un número del 1 al 9 para descubrir tu premio</p>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {Array.from({length: 6}, (_, i) => {
+        {Array.from({length: 9}, (_, i) => {
           const isSelected = selected === i;
           const isDimmed = selected !== null && !isSelected;
-          const isShaking = isSelected && opening;
+          const isPulsing = isSelected && opening;
           const isOpen = isSelected && revealed;
+          const color = NUMBER_COLORS[i];
 
           return (
             <button
               key={i}
-              onClick={() => handleBoxClick(i)}
+              onClick={() => handleNumberClick(i)}
               disabled={selected !== null}
-              className="gift-box relative focus:outline-none rounded-2xl overflow-hidden"
+              className="num-btn relative focus:outline-none"
               style={{
                 aspectRatio: '1/1',
-                transform: isDimmed ? 'scale(0.88)' : undefined,
-                opacity: isDimmed ? 0.22 : 1,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                transform: isDimmed ? 'scale(0.85)' : undefined,
+                opacity: isDimmed ? 0.25 : 1,
+                background: isOpen && won
+                  ? 'radial-gradient(circle at 35% 35%, #f0c800, #c49000 70%)'
+                  : isOpen
+                    ? 'radial-gradient(circle at 35% 35%, #2a2a4a, #0d0d1a 70%)'
+                    : `radial-gradient(circle at 35% 35%, ${color}ff, ${color}99 70%)`,
                 boxShadow: isOpen && won
                   ? undefined
                   : isSelected
-                    ? `0 8px 28px ${primaryColor}70, 0 0 0 2px ${primaryColor}`
-                    : `0 4px 14px ${primaryColor}30, 0 0 0 1.5px ${primaryColor}40`,
+                    ? `0 8px 24px ${color}80, inset 0 0 0 2px rgba(255,255,255,0.2)`
+                    : `0 8px 20px ${color}50, inset 0 0 0 2px rgba(255,255,255,0.2)`,
                 animation: isOpen && won
-                  ? 'boxGlow 2s ease-in-out infinite'
-                  : isShaking
-                    ? 'boxShake 0.35s ease-in-out'
+                  ? 'numGlow 2s ease-in-out infinite, numberWin 0.5s ease-out forwards'
+                  : isPulsing
+                    ? 'numberPulse 0.7s ease-in-out infinite'
                     : undefined,
-                transition: isDimmed ? 'all 0.4s ease' : 'box-shadow 0.25s ease, opacity 0.3s ease',
+                transition: isDimmed ? 'all 0.4s ease' : 'opacity 0.3s ease',
                 cursor: selected !== null ? 'default' : 'pointer',
               }}
             >
-              {/* Body */}
-              {(() => {
-                const c = BOX_COLORS[i];
-                return (<>
-                  <div className="absolute inset-0" style={{
-                    background: isOpen && won
-                      ? 'linear-gradient(180deg, #f0c800, #c49000)'
-                      : isOpen
-                        ? 'linear-gradient(180deg, #1c1c35, #0d0d1a)'
-                        : `linear-gradient(180deg, ${c.body}dd, ${c.body})`,
-                    transition: 'background 0.5s ease',
-                  }}>
-                    {/* Body sheen diagonal */}
-                    <div style={{position:'absolute', inset:0, background:'linear-gradient(45deg, rgba(255,255,255,0.15) 0%, transparent 50%)', pointerEvents:'none'}}/>
-                    {/* Vertical ribbon on body */}
-                    <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'10px', background:c.ribbon, transform:'translateX(-50%)', boxShadow:`0 0 6px ${c.ribbon}80`, pointerEvents:'none'}}/>
-                    {/* Body content */}
-                    <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', paddingTop:'30%'}}>
-                      {isOpen ? (
-                        <span style={{fontSize:'2.8rem', lineHeight:1, animation: won ? 'floatWin 1.6s ease-in-out infinite' : undefined}}>
-                          {won ? '🏆' : '😔'}
-                        </span>
-                      ) : (
-                        <span style={{fontSize:'1.4rem', fontWeight:900, color:'rgba(255,255,255,0.4)', userSelect:'none' as const}}>
-                          {i + 1}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Lid */}
-                  {!isOpen && (
-                    <div style={{
-                      position:'absolute', top:0, left:0, right:0, height:'32%',
-                      background: c.lid,
-                      borderBottom: `3px solid ${c.ribbon}`,
-                      transformOrigin:'top center',
-                      animation: isShaking ? 'lidOpen 0.6s ease-in forwards' : undefined,
-                      zIndex:2,
-                    }}>
-                      <div style={{position:'absolute', inset:0, background:'linear-gradient(45deg, rgba(255,255,255,0.25) 0%, transparent 50%)'}}/>
-                    </div>
-                  )}
-
-                  {/* Horizontal ribbon on lid */}
-                  {!isOpen && (
-                    <div style={{position:'absolute', top:'16%', left:0, right:0, height:'10px', background:c.ribbon, boxShadow:`0 0 6px ${c.ribbon}80`, zIndex:3, pointerEvents:'none'}}/>
-                  )}
-
-                  {/* Full-height vertical ribbon overlay */}
-                  {!isOpen && (
-                    <div style={{position:'absolute', left:'50%', top:0, bottom:0, width:'10px', background:c.ribbon, transform:'translateX(-50%)', boxShadow:`0 0 6px ${c.ribbon}80`, zIndex:5, pointerEvents:'none'}}/>
-                  )}
-
-                  {/* Bow */}
-                  {!isOpen && (
-                    <div style={{position:'absolute', top:'28%', left:'50%', transform:'translate(-50%, -50%)', fontSize:'1.4rem', lineHeight:1, filter:'drop-shadow(0 1px 3px rgba(0,0,0,0.5))', zIndex:6, pointerEvents:'none'}}>🎀</div>
-                  )}
-                </>);
-              })()}
+              <div style={{position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center'}}>
+                {isOpen ? (
+                  <span style={{fontSize:'2.8rem', lineHeight:1, animation: won ? 'numberFloat 1.6s ease-in-out infinite' : undefined}}>
+                    {won ? '🏆' : '😔'}
+                  </span>
+                ) : (
+                  <span style={{fontSize:'1.8rem', fontWeight:900, color:'white', textShadow:'0 2px 6px rgba(0,0,0,0.4)', userSelect:'none' as const}}>
+                    {i + 1}
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}
       </div>
 
       {selected === null && (
-        <p className="text-white/50 text-sm text-center animate-pulse">Elegí una caja para descubrir tu premio</p>
+        <p className="text-white/50 text-sm text-center animate-pulse">Tocá un número para descubrir tu premio</p>
       )}
 
       {opening && (
         <div className="text-center">
-          <p className="text-white/60 text-sm animate-pulse">Abriendo la caja...</p>
+          <p className="text-white/60 text-sm animate-pulse">Consultando tu número...</p>
         </div>
       )}
 
@@ -936,7 +888,7 @@ export default function PlayPage() {
           ) : (
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-xl"
               style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}>
-              <span className="text-3xl">{campaign.gameType==="SLOTS"?"🎰":campaign.gameType==="GLOBO"?"🎈":campaign.gameType==="CAJA"?"📦":"🎫"}</span>
+              <span className="text-3xl">{campaign.gameType==="SLOTS"?"🎰":campaign.gameType==="GLOBO"?"🎈":campaign.gameType==="CAJA"?"🔢":"🎫"}</span>
             </div>
           )}
           <h1 className="text-white text-2xl font-black tracking-tight">{campaign.name}</h1>
@@ -950,7 +902,7 @@ export default function PlayPage() {
             <div className="rounded-2xl p-5 mb-2 text-center" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}22, ${campaign.secondaryColor}22)`, border:`1px solid ${campaign.primaryColor}40`}}>
               <p className="text-white font-black text-lg mb-1">🎯 ¿Cómo participar?</p>
               <p className="text-white/70 text-sm leading-relaxed">
-                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":campaign.gameType==="GLOBO"?"explotá el globo y descubrí si ganaste":campaign.gameType==="CAJA"?"elegí una caja y descubrí si ganaste":"raspá la tarjeta y descubrí si ganaste"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
+                Completá tus datos, {campaign.gameType==="SLOTS"?"tirá los rodillos y descubrí si ganaste":campaign.gameType==="GLOBO"?"explotá el globo y descubrí si ganaste":campaign.gameType==="CAJA"?"elegí tu número de la suerte y descubrí si ganaste":"raspá la tarjeta y descubrí si ganaste"}. ¡Tenés {campaign.attemptsPerSession} {campaign.attemptsPerSession===1?"intento":"intentos"}!
               </p>
             </div>
             <form onSubmit={handleRegister} className="space-y-3">
@@ -1017,7 +969,7 @@ export default function PlayPage() {
             ) : campaign.gameType==="GLOBO" ? (
               <BalloonGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onSpin={handleSpin} onComplete={handleScratchComplete} hasConsolePrize={!!campaign.consolePrize}/>
             ) : campaign.gameType==="CAJA" ? (
-              <BoxGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onSpin={handleSpin} onComplete={handleScratchComplete} hasConsolePrize={!!campaign.consolePrize}/>
+              <NumberGame primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} onSpin={handleSpin} onComplete={handleScratchComplete} hasConsolePrize={!!campaign.consolePrize}/>
             ) : (
               <ScratchCard primaryColor={campaign.primaryColor} secondaryColor={campaign.secondaryColor} attemptsPerSession={campaign.attemptsPerSession} onSpin={handleSpin} onComplete={handleScratchComplete} winnerSymbol="🍀" hasConsolePrize={!!campaign.consolePrize}/>
             )}
