@@ -38,7 +38,7 @@ export default async function TerminosPage({ params }: { params: { slug: string 
           ) : (
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl shadow-xl"
               style={{ background: `linear-gradient(135deg, ${primary}, ${primary}99)` }}>
-              <span className="text-3xl">{isSorteo ? "🎲" : campaign.gameType === "SLOTS" ? "🎰" : "🎫"}</span>
+              <span className="text-3xl">{isSorteo ? "🎲" : campaign.gameType === "SLOTS" ? "🎰" : campaign.gameType === "GLOBO" ? "🎈" : campaign.gameType === "CAJA" ? "🔢" : "🎫"}</span>
             </div>
           )}
           <h1 className="text-white font-black text-2xl">{campaign.name}</h1>
@@ -93,6 +93,9 @@ export default async function TerminosPage({ params }: { params: { slug: string 
                     <p className="text-white/40 text-xs ml-4 shrink-0">{prize.stock} {prize.stock === 1 ? "unidad" : "unidades"}</p>
                   </div>
                   <p className="text-white/40 text-xs mt-1">Válido por {prize.validDays} días desde que se gana</p>
+                  {(prize as any).prizeImage && (
+                    <img src={(prize as any).prizeImage} alt={prize.title} className="w-full aspect-video object-cover rounded-xl mt-2 max-h-48"/>
+                  )}
                 </div>
               ))}
               {campaign.endDate && (
@@ -101,6 +104,36 @@ export default async function TerminosPage({ params }: { params: { slug: string 
                   <span className="text-white text-sm text-right">{formatDate(campaign.endDate)}</span>
                 </div>
               )}
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-white/50 text-sm shrink-0">Participación permitida</span>
+                <span className="text-white text-sm text-right">
+                  {campaign.participationLimit === "once_email" ? "Una vez por email" : campaign.participationLimit === "once_daily" ? "Una vez por día" : "Sin límite de participaciones"}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isSorteo && (
+          <div className="rounded-2xl p-6 space-y-3" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h2 className="font-bold text-lg" style={{ color: primary }}>¿Cómo canjear tu premio?</h2>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">1️⃣</span>
+                <p className="text-white/70 text-sm">Participá en el juego completando el formulario con tu email.</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">2️⃣</span>
+                <p className="text-white/70 text-sm">Si ganás, recibirás un email con un código QR único e intransferible.</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">3️⃣</span>
+                <p className="text-white/70 text-sm">Presentá ese QR al personal del comercio para canjear tu premio. El código es de uso único.</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl shrink-0">⏰</span>
+                <p className="text-white/70 text-sm">Cada premio tiene una fecha límite de canje indicada en el email. Vencido ese plazo, el premio pierde validez.</p>
+              </div>
             </div>
           </div>
         )}
