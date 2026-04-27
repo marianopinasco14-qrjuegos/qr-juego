@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { executePrizeEngine } from "@/lib/prize-engine";
-import { sendWinnerEmail, sendConsoleEmail } from "@/lib/email";
+import { sendWinnerEmail } from "@/lib/email";
 import { spinSchema } from "@/lib/validations";
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +27,6 @@ export async function POST(req: NextRequest) {
       const extra = lead.extraFields as Record<string, string>;
       const name = extra?.nombre || extra?.name || lead.email.split("@")[0];
       if (result.prizeResult.isWinner) { await sendWinnerEmail({ campaignId, toEmail: lead.email, toName: name, prizeName: result.prizeResult.prizeTitle!, redemptionCode: result.prizeResult.redemptionCode!, expiresAt: result.prizeResult.expiresAt! }); }
-      else { await sendConsoleEmail({ campaignId, toEmail: lead.email, toName: name, couponCode: result.prizeResult.consolePrizeCoupon ?? "CONSUELO" }); }
     }
     return NextResponse.json({ success: true, isLastAttempt: result.isLastAttempt, prizeResult: result.prizeResult });
   } catch (error) { console.error("Error spin:", error); return NextResponse.json({ error: "Error interno." }, { status: 500 }); }

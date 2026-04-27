@@ -1023,7 +1023,19 @@ export default function PlayPage() {
                         </div>
                       )}
                     </div>
-                    <p className="text-white/40 text-xs">📧 Enviamos tu código al email</p>
+                    <div className="w-full space-y-3">
+                      <p className="text-white/60 text-sm text-center">📸 Sacá una captura de pantalla para guardar tu cupón</p>
+                      {prizeResult.consolePrizeCoupon && (
+                        <a
+                          href={`data:text/plain;charset=utf-8,Tu cupón: ${prizeResult.consolePrizeCoupon}`}
+                          download="cupon-jugalo.txt"
+                          className="w-full py-3 rounded-2xl font-bold text-white text-center block text-sm"
+                          style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}
+                        >
+                          ⬇️ Descargar cupón
+                        </a>
+                      )}
+                    </div>
                   </>
                 ) : (
                   <div className="text-center">

@@ -41,7 +41,7 @@ export async function sendWinnerEmail(params: { campaignId: string; toEmail: str
 </body>
 </html>`;
 
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: template.subject, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: template.subject, html });
   } catch (e) { console.error("Email ganador error (no critico):", e); }
 }
 
@@ -73,7 +73,7 @@ export async function sendConsoleEmail(params: { campaignId: string; toEmail: st
 </body>
 </html>`;
 
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: template.subject, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: template.subject, html });
   } catch (e) { console.error("Email consuelo error (no critico):", e); }
 }
 
@@ -102,7 +102,7 @@ export async function sendWelcomeEmail(params: { toEmail: string; toName: string
     </ol>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: `¡Bienvenido a QR Juego! Tu trial de ${params.trialDays} días ya está activo 🎯`, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `¡Bienvenido a QR Juego! Tu trial de ${params.trialDays} días ya está activo 🎯`, html });
     const org = await prisma.organization.findFirst({ where: { email: params.toEmail }, select: { id: true } });
     if (org) {
       await prisma.emailLog.create({ data: { organizationId: org.id, to: params.toEmail, subject: `¡Bienvenido a QR Juego! Tu trial de ${params.trialDays} días ya está activo 🎯`, type: "WELCOME", status: "SENT" } });
@@ -130,7 +130,7 @@ export async function sendTrialEndingEmail(params: { toEmail: string; toName: st
     <p style="color:#999;font-size:13px;text-align:center;">Si no elegís un plan, perderás acceso a tus campañas activas.</p>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: `⏰ Tu trial vence en ${params.daysLeft} días — Elegí tu plan`, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `⏰ Tu trial vence en ${params.daysLeft} días — Elegí tu plan`, html });
     const org = await prisma.organization.findFirst({ where: { email: params.toEmail }, select: { id: true } });
     if (org) {
       await prisma.emailLog.create({ data: { organizationId: org.id, to: params.toEmail, subject: `⏰ Tu trial vence en ${params.daysLeft} días — Elegí tu plan`, type: "TRIAL_EXPIRING", status: "SENT" } });
@@ -158,7 +158,7 @@ export async function sendSubscriptionActivatedEmail(params: { toEmail: string; 
     </div>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: `✅ Suscripción activada — Plan ${params.planName}`, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `✅ Suscripción activada — Plan ${params.planName}`, html });
     const org = await prisma.organization.findFirst({ where: { email: params.toEmail }, select: { id: true } });
     if (org) {
       await prisma.emailLog.create({ data: { organizationId: org.id, to: params.toEmail, subject: `✅ Suscripción activada — Plan ${params.planName}`, type: "SUBSCRIPTION_ACTIVATED", status: "SENT" } });
@@ -186,7 +186,7 @@ export async function sendSubscriptionCanceledEmail(params: { toEmail: string; t
     </div>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: `Suscripción cancelada — Acceso hasta ${fechaAcceso}`, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `Suscripción cancelada — Acceso hasta ${fechaAcceso}`, html });
     const org = await prisma.organization.findFirst({ where: { email: params.toEmail }, select: { id: true } });
     if (org) {
       await prisma.emailLog.create({ data: { organizationId: org.id, to: params.toEmail, subject: `Suscripción cancelada — Acceso hasta ${fechaAcceso}`, type: "SUBSCRIPTION_CANCELED", status: "SENT" } });
@@ -213,7 +213,7 @@ export async function sendPaymentFailedEmail(params: { toEmail: string; toName: 
     </div>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: "⚠️ Pago fallido — Actualizá tu método de pago", html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: "⚠️ Pago fallido — Actualizá tu método de pago", html });
     const org = await prisma.organization.findFirst({ where: { email: params.toEmail }, select: { id: true } });
     if (org) {
       await prisma.emailLog.create({ data: { organizationId: org.id, to: params.toEmail, subject: "⚠️ Pago fallido — Actualizá tu método de pago", type: "PAYMENT_FAILED", status: "SENT" } });
@@ -237,7 +237,7 @@ export async function sendAffiliateCommissionEarnedEmail(params: { toEmail: stri
     <p style="color:#999;font-size:13px;text-align:center;">Te avisaremos cuando procesemos el pago.</p>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: `💰 Nueva comisión — $${params.commissionAmount.toFixed(2)} USD de ${params.referredOrgName}`, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `💰 Nueva comisión — $${params.commissionAmount.toFixed(2)} USD de ${params.referredOrgName}`, html });
   } catch (e) { console.error("sendAffiliateCommissionEarnedEmail error:", e); }
 }
 
@@ -257,7 +257,7 @@ export async function sendAffiliateCommissionPaidEmail(params: { toEmail: string
     <p style="color:#555;font-size:14px;text-align:center;">Gracias por ser parte del programa de afiliados.</p>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: `✅ Pago de comisión procesado — $${params.amountPaid.toFixed(2)} USD`, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: `✅ Pago de comisión procesado — $${params.amountPaid.toFixed(2)} USD`, html });
   } catch (e) { console.error("sendAffiliateCommissionPaidEmail error:", e); }
 }
 
@@ -317,7 +317,7 @@ export async function sendRaffleWinnerEmail(params: {
 </body>
 </html>`;
 
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject, html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject, html });
   } catch (e) { console.error("Email ganador sorteo error (no critico):", e); }
 }
 
@@ -339,6 +339,6 @@ export async function sendPasswordResetEmail(params: { toEmail: string; toName: 
     <p style="color:#bbb;font-size:12px;text-align:center;margin-top:8px;">Si no solicitaste esto, ignorá este email.</p>
   </div>
 </div></body></html>`;
-    await resend.emails.send({ from: "QR Juego <noreply@qrjuego.app>", to: params.toEmail, subject: "🔐 Recuperar contraseña — QR Juego", html });
+    await resend.emails.send({ from: "jugalo.app <noreply@jugalo.app>", to: params.toEmail, subject: "🔐 Recuperar contraseña — QR Juego", html });
   } catch (e) { console.error("sendPasswordResetEmail error:", e); }
 }

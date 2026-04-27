@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { executePrizeEngine } from "@/lib/prize-engine";
-import { sendWinnerEmail, sendConsoleEmail } from "@/lib/email";
+import { sendWinnerEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +20,6 @@ export async function POST(req: NextRequest) {
     const name = extra?.nombre || extra?.name || lead.email.split("@")[0];
     if (result.isWinner) {
       await sendWinnerEmail({ campaignId, toEmail: lead.email, toName: name, prizeName: result.prizeTitle!, redemptionCode: result.redemptionCode!, expiresAt: result.expiresAt! });
-    } else if (result.consolePrizeCoupon) {
-      await sendConsoleEmail({ campaignId, toEmail: lead.email, toName: name, couponCode: result.consolePrizeCoupon });
     }
     return NextResponse.json({ prizeResult: result });
   } catch (error) {
