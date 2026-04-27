@@ -8,12 +8,17 @@ export default function NewCampaignPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [hasStaff, setHasStaff] = useState<boolean|null>(null);
+  const [orgReady, setOrgReady] = useState<boolean|null>(null);
 
   useEffect(() => {
     fetch("/api/staff-pins")
       .then(r => r.json())
       .then(data => setHasStaff(Array.isArray(data) && data.some((p: any) => p.isActive)))
       .catch(() => setHasStaff(false));
+    fetch("/api/settings/account")
+      .then(r => r.json())
+      .then(data => setOrgReady(!!(data?.name?.length > 1 && data?.contactName?.length > 1)))
+      .catch(() => setOrgReady(false));
   }, []);
   const [form, setForm] = useState<any>({ name:"", gameType:"RASCA_Y_GANA", attemptsPerSession:3, participationLimit:"once_email", logoUrl:"", primaryColor:"#7C3AED", secondaryColor:"#A78BFA", backgroundColor:"#1a1a2e", language:"es", ageGate:false, prizes:[{title:"",stock:10,priority:5,frequency:50,validDays:30}], consolePrize:{title:"",couponCode:""},
     gameTerms:"", startDate:"", endDate:"", emailWinner:{subject:"🎉 ¡Ganaste un premio!",bodyHtml:"Felicitaciones {{name}}! Ganaste: {{prize}}. Tu código es: {{redemptionCode}}. Válido hasta: {{expiresAt}}"}, emailConsole:{subject:"Tu regalo te espera 🎁",bodyHtml:"Gracias por participar! Tu código de descuento es: {{couponCode}}"}, upsellEnabled:false, upsellTitle:"", upsellPrice:0, upsellCurrency:"ARS", upsellLink:"", upsellImageUrl:"", closedBehavior:"LEAD_MAGNET",
@@ -63,6 +68,25 @@ export default function NewCampaignPage() {
       router.push("/dashboard");
     } catch(e){console.error(e);setSaveError("Error de conexión. Intentá de nuevo.");setSaving(false);}
   }
+  if (orgReady === null) return (
+    <div className="max-w-2xl mx-auto flex items-center justify-center py-20">
+      <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"/>
+    </div>
+  );
+
+  if (orgReady === false) return (
+    <div className="max-w-2xl mx-auto py-6">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6 flex items-start gap-4">
+        <span className="text-2xl">⚠️</span>
+        <div>
+          <p className="text-amber-400 font-bold">Completá los datos de tu comercio primero</p>
+          <p className="text-amber-300/70 text-sm mt-1">Para crear un juego necesitás tener el nombre del comercio y el nombre del responsable completos en Configuración. Estos datos aparecen en los cupones y en los términos y condiciones de tus juegos.</p>
+          <a href="/settings" className="inline-block mt-3 bg-amber-500 hover:bg-amber-400 text-black font-bold px-4 py-2 rounded-xl text-sm transition-colors">Ir a Configuración →</a>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="max-w-2xl mx-auto">
       {hasStaff === false && (

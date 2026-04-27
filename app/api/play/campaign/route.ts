@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       startDate: true, endDate: true, prizes: { select: { title: true, stock: true, validDays: true, deliveredCount: true, prizeImage: true } }, closedRedirectUrl: true, consolePrize: { select: { id: true } },
       raffleDrawDate: true, raffleTerms: true, raffleTermsUrl: true, raffleClaimDays: true, raffleExecutedAt: true,
       rafflePrizes: { select: { id: true, title: true, description: true, imageUrl: true, stock: true } },
-      organization: { select: { metaPixelId: true, googleAnalyticsId: true, tiktokPixelId: true } },
+      organization: { select: { name: true, contactName: true, metaPixelId: true, googleAnalyticsId: true, tiktokPixelId: true } },
     }
   });
   if (!campaign) return NextResponse.json({ error: "Campana no disponible" }, { status: 404 });
@@ -39,5 +39,7 @@ export async function GET(req: NextRequest) {
     metaPixelId: organization?.metaPixelId ?? null,
     googleAnalyticsId: organization?.googleAnalyticsId ?? null,
     tiktokPixelId: organization?.tiktokPixelId ?? null,
+    organizationName: organization?.name ?? null,
+    organizationContact: organization?.contactName ?? null,
   });
 }

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 export default async function TerminosPage({ params }: { params: { slug: string } }) {
   const campaign = await prisma.campaign.findUnique({
     where: { qrSlug: params.slug },
-    include: { rafflePrizes: true, prizes: true },
+    include: { rafflePrizes: true, prizes: true, organization: { select: { name: true, contactName: true, contactWhatsapp: true } } },
   });
 
   if (!campaign) {
@@ -113,6 +113,30 @@ export default async function TerminosPage({ params }: { params: { slug: string 
             <p className="text-white/40 text-sm italic">Los términos y condiciones de este juego aún no están disponibles.</p>
           )}
         </div>
+
+        {(campaign.organization?.name || campaign.organization?.contactName || campaign.organization?.contactWhatsapp) && (
+          <div className="rounded-2xl p-6 space-y-3" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h2 className="font-bold text-lg" style={{ color: primary }}>Datos del comercio</h2>
+            {campaign.organization?.name && (
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-white/50 text-sm shrink-0">Organizador</span>
+                <span className="text-white text-sm text-right">{campaign.organization.name}</span>
+              </div>
+            )}
+            {campaign.organization?.contactName && (
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-white/50 text-sm shrink-0">Responsable</span>
+                <span className="text-white text-sm text-right">{campaign.organization.contactName}</span>
+              </div>
+            )}
+            {campaign.organization?.contactWhatsapp && (
+              <div className="flex justify-between items-start gap-4">
+                <span className="text-white/50 text-sm shrink-0">Contacto</span>
+                <span className="text-white text-sm text-right">{campaign.organization.contactWhatsapp}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <p className="text-center text-white/20 text-xs pb-4">
           Organizado mediante QR Juego — jugalo.app

@@ -11,6 +11,17 @@ const schema = z.object({
   businessType: z.string().max(100).optional(),
 });
 
+export async function GET() {
+  const token = cookies().get("auth-token")?.value;
+  const payload = token ? verifyToken(token) : null;
+  if (!payload) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const org = await prisma.organization.findUnique({
+    where: { id: (payload as any).organizationId },
+    select: { name: true, contactName: true },
+  });
+  return NextResponse.json(org);
+}
+
 export async function PATCH(req: Request) {
   const token = cookies().get("auth-token")?.value;
   const payload = token ? verifyToken(token) : null;

@@ -15,6 +15,7 @@ type Campaign = {
   upsellLink?: string; upsellImage?: string; upsellImageUrl?: string;
   endDate?: string; prizes?: Prize[]; closedRedirectUrl?: string; logoUrl?: string; consolePrize?: { id: string } | null;
   metaPixelId?: string | null; googleAnalyticsId?: string | null; tiktokPixelId?: string | null;
+  organizationName?: string | null; organizationContact?: string | null;
   // Sorteo
   raffleDrawDate?: string; raffleTerms?: string; raffleTermsUrl?: string;
   raffleClaimDays?: number; raffleExecutedAt?: string | null; rafflePrizes?: RafflePrize[];
@@ -802,6 +803,7 @@ export default function PlayPage() {
   const [formError, setFormError] = useState("");
   const [registering, setRegistering] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const couponRef = useRef<HTMLDivElement>(null);
 
   useEffect(()=>{
     fetch(`/api/play/campaign?slug=${slug}`)
@@ -1014,26 +1016,39 @@ export default function PlayPage() {
                       <p className="text-white font-black text-2xl">Esta vez no fue...</p>
                       <p className="text-white/50 text-sm mt-1">Tenés un regalo especial para vos</p>
                     </div>
-                    <div className="w-full bg-white/5 border border-white/10 rounded-3xl p-6 space-y-3">
-                      <p className="text-white font-bold text-lg">{prizeResult.consolePrizeTitle}</p>
+                    <div ref={couponRef} className="w-full rounded-3xl overflow-hidden" style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`, borderLeft:'4px dashed rgba(255,255,255,0.3)', borderRight:'4px dashed rgba(255,255,255,0.3)'}}>
+                      <div className="px-6 pt-5 pb-2">
+                        {campaign.organizationName && <p className="text-white/70 text-xs font-medium mb-1 uppercase tracking-wider">{campaign.organizationName}</p>}
+                        <p className="text-white font-black text-xl leading-tight">{prizeResult.consolePrizeTitle}</p>
+                      </div>
                       {prizeResult.consolePrizeCoupon && (
-                        <div className="border-2 border-dashed rounded-2xl px-6 py-5" style={{borderColor:`${campaign.primaryColor}60`}}>
-                          <p className="text-white/40 text-xs mb-2">Tu código especial</p>
-                          <p className="font-mono font-black text-2xl tracking-widest" style={{color:campaign.secondaryColor}}>{prizeResult.consolePrizeCoupon}</p>
+                        <div className="mx-4 mb-4 mt-2 rounded-2xl px-5 py-4" style={{background:'rgba(0,0,0,0.25)'}}>
+                          <p className="text-white/50 text-xs mb-1">Tu código</p>
+                          <p className="font-mono font-black text-2xl tracking-widest text-white">{prizeResult.consolePrizeCoupon}</p>
                         </div>
                       )}
+                      <div className="px-6 pb-4">
+                        <p className="text-white/60 text-xs">{campaign.organizationName ? `Válido en ${campaign.organizationName}` : 'Presentá este cupón'}</p>
+                      </div>
                     </div>
                     <div className="w-full space-y-3">
                       <p className="text-white/60 text-sm text-center">📸 Sacá una captura de pantalla para guardar tu cupón</p>
                       {prizeResult.consolePrizeCoupon && (
-                        <a
-                          href={`data:text/plain;charset=utf-8,Tu cupón: ${prizeResult.consolePrizeCoupon}`}
-                          download="cupon-jugalo.txt"
+                        <button
+                          onClick={async () => {
+                            if (!couponRef.current) return;
+                            const html2canvas = (await import('html2canvas')).default;
+                            const canvas = await html2canvas(couponRef.current, {scale: 2, backgroundColor: null});
+                            const link = document.createElement('a');
+                            link.download = 'cupon-jugalo.png';
+                            link.href = canvas.toDataURL('image/png');
+                            link.click();
+                          }}
                           className="w-full py-3 rounded-2xl font-bold text-white text-center block text-sm"
                           style={{background:`linear-gradient(135deg, ${campaign.primaryColor}, ${campaign.secondaryColor})`}}
                         >
                           ⬇️ Descargar cupón
-                        </a>
+                        </button>
                       )}
                     </div>
                   </>
