@@ -98,6 +98,17 @@ const BUSINESS_TYPES = [
   "Hotel",
   "Salud y bienestar",
   "Educación",
+  "Peluquería y estética",
+  "Farmacia",
+  "Veterinaria",
+  "Gimnasio y deportes",
+  "Tecnología",
+  "Moda y ropa",
+  "Panadería y cafetería",
+  "Supermercado",
+  "Inmobiliaria",
+  "Automotriz",
+  "Turismo y viajes",
   "Otro",
 ];
 

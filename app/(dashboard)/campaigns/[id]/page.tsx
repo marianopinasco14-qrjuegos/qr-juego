@@ -285,6 +285,7 @@ export default function EditCampaignPage() {
           upsellLink: data.upsellLink || "",
           upsellImageUrl: data.upsellImageUrl || "",
           closedBehavior: data.closedBehavior || "LEAD_MAGNET",
+          closedRedirectUrl: data.closedRedirectUrl || "",
           status: data.status || "ACTIVE",
           prizes: data.prizes?.length > 0 ? data.prizes.map((p: any) => ({
             id: p.id,
