@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { activateSubscription, cancelSubscription } from "@/lib/billing";
 import { dispatchWebhook } from "@/lib/webhooks";
+import { sendSubscriptionActivatedEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -47,6 +48,25 @@ export async function POST(req: Request) {
           currentPeriodStart: new Date(),
           currentPeriodEnd: new Date(Date.now() + 30 * 86400000),
         });
+
+        const owner = await prisma.user.findFirst({
+          where: { organizationId, role: "OWNER" },
+          select: { email: true, name: true },
+        });
+        const orgData = await prisma.organization.findUnique({
+          where: { id: organizationId },
+          select: { name: true },
+        });
+        if (owner && orgData && plan) {
+          await sendSubscriptionActivatedEmail({
+            toEmail: owner.email,
+            toName: owner.name ?? owner.email,
+            orgName: orgData.name,
+            planName: plan.name,
+            amount: Number(event.amount),
+            nextPaymentAt: new Date(Date.now() + 30 * 86400000),
+          });
+        }
 
         dispatchWebhook(organizationId, "subscription.created", {
           provider: "DLOCAL",
